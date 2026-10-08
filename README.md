@@ -220,3 +220,5 @@ AccessibilityService 适合验证截图、节点滚动和跟随事件，但 Goog
 - [Android 版详细开发方案](FootballScreenshotOcr-Android版详细开发方案-补充完善版.md)：产品定位、业务不变量、架构、平台限制、跨端契约和验收标准。
 - [Gradle 配置](build.gradle.kts)：根工程插件配置。
 - [应用模块](app/build.gradle.kts)：当前 Android 模块、SDK 和依赖配置。
+
+# FootballScreenshotOcr-App
