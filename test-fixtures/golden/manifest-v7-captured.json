@@ -1,0 +1,31 @@
+{
+  "schema_version": 7,
+  "task_id": "synthetic-task-captured",
+  "slots": {
+    "asian_handicap": {
+      "slot": "asian_handicap",
+      "state": "valid",
+      "assets": [],
+      "result": null,
+      "messages": [],
+      "revision": 1,
+      "capture_source": "accessibility",
+      "coverage": "COMPLETE",
+      "capture_session_ids": ["session-synthetic-001"],
+      "capture_segment_ids": ["segment-001", "segment-002"],
+      "diagnostics": [
+        {
+          "code": "SCROLL_BLOCKED",
+          "severity": "warning",
+          "message": "Synthetic scroll retry",
+          "recorded_at": "2026-10-01T10:05:30Z",
+          "segment_id": "segment-002",
+          "asset_id": "asset-ah-2"
+        }
+      ]
+    }
+  },
+  "capture_session_ids": ["session-synthetic-001"],
+  "resource_versions": {"provider_catalog": "synthetic-1"},
+  "model_versions": {"ocr_model": "synthetic-model-1", "preprocessing": "synthetic-preprocess-1"}
+}

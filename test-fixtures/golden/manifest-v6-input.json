@@ -1,0 +1,157 @@
+{
+  "schema_version": 6,
+  "task_id": "synthetic-task-001",
+  "created_at": "2026-10-01T10:00:00Z",
+  "updated_at": "2026-10-01T10:30:00Z",
+  "last_operation_at": null,
+  "status": "ready",
+  "revision": 4,
+  "fixture": {
+    "competition": "Synthetic League",
+    "home_team": "Alpha",
+    "away_team": "Beta",
+    "kickoff_display": "10-01 20:00",
+    "sport_lottery_handicap": 0,
+    "sport_lottery_serial": null,
+    "sport_lottery_source": null,
+    "user_edited": true,
+    "competition_user_edited": true,
+    "competition_fixture_id": null,
+    "competition_catalog_version": null,
+    "competition_catalog_source": null
+  },
+  "slots": {
+    "asian_handicap": {
+      "slot": "asian_handicap",
+      "state": "warning",
+      "assets": [
+        {
+          "asset_id": "asset-ah-1",
+          "slot": "asian_handicap",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "relative_path": "raw/slot-01/001.png",
+          "sequence": 1,
+          "revision": 1,
+          "created_at": "2026-10-01T10:05:00Z"
+        },
+        {
+          "asset_id": "asset-ah-2",
+          "slot": "asian_handicap",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "relative_path": "raw/slot-01/002.png",
+          "sequence": 2,
+          "revision": 1,
+          "created_at": "2026-10-01T10:06:00Z"
+        }
+      ],
+      "result": {
+        "slot": "asian_handicap",
+        "fixture": null,
+        "overview_rows": [
+          {
+            "provider_name": "Pinnacle",
+            "provider_id": "pinnacle",
+            "provider_raw_name": "Pinnacle",
+            "provider_raw_names": ["Pinnacle"],
+            "provider_confirmed": true,
+            "provider_name_bboxes": [[0.05, 0.1, 0.2, 0.15]],
+            "provider_name_evidences": [{"raw_text": "Pinnacle", "value": "Pinnacle", "asset_id": "asset-ah-1", "bbox": [0.05, 0.1, 0.2, 0.15], "confidence": 0.98}],
+            "opening": ["0.92", "半球", "0.94"],
+            "late": ["0.90", "半球", "0.96"],
+            "opening_bboxes": [[0.2, 0.2, 0.3, 0.25], [0.31, 0.2, 0.4, 0.25], [0.41, 0.2, 0.5, 0.25]],
+            "late_bboxes": [[0.2, 0.3, 0.3, 0.35], [0.31, 0.3, 0.4, 0.35], [0.41, 0.3, 0.5, 0.35]],
+            "source_assets": ["asset-ah-1"]
+          },
+          {
+            "provider_name": "Unknown Synthetic Book",
+            "provider_id": null,
+            "provider_raw_name": "Synthetic Book?",
+            "provider_raw_names": ["Synthetic Book?"],
+            "provider_confirmed": false,
+            "provider_name_bboxes": [[0.05, 0.4, 0.2, 0.45]],
+            "provider_name_evidences": [],
+            "opening": ["1.01", "平手", "0.89"],
+            "late": ["1.02", "平手", "0.88"],
+            "opening_bboxes": [],
+            "late_bboxes": [],
+            "source_assets": ["asset-ah-2"]
+          }
+        ],
+        "timeline_rows": [],
+        "betfair_rows": [],
+        "values": {},
+        "evidences": [],
+        "conflicts": [
+          {
+            "key": "asian_handicap.home_water",
+            "values": ["0.90", "0.91"],
+            "asset_bboxes": [["asset-ah-1", [0.2, 0.3, 0.3, 0.35]], ["asset-ah-2", [0.2, 0.3, 0.3, 0.35]]],
+            "source_assets": ["asset-ah-1", "asset-ah-2"]
+          }
+        ],
+        "warnings": ["Synthetic value conflict retained for review"],
+        "errors": []
+      },
+      "messages": ["Two synthetic captures overlap"],
+      "revision": 2
+    },
+    "asian_handicap_macau": {
+      "slot": "asian_handicap_macau",
+      "state": "images_ready",
+      "assets": [{"asset_id": "asset-macau-1", "slot": "asian_handicap_macau", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "relative_path": "raw/slot-02/001.png", "sequence": 1, "revision": 1, "created_at": "2026-10-01T10:07:00Z"}],
+      "result": {
+        "slot": "asian_handicap_macau",
+        "timeline_rows": [
+          {"displayed_at": "10-01 10:00", "status": "即", "values": ["0.90", "半球", "0.96"], "values_bboxes": [[0.2, 0.2, 0.3, 0.25]], "return_rate": null, "kelly_values": [], "kelly_bboxes": [], "source_assets": ["asset-macau-1"]},
+          {"displayed_at": "09-30 08:00", "status": "初", "values": ["0.92", "半球", "0.94"], "values_bboxes": [[0.2, 0.3, 0.3, 0.35]], "return_rate": null, "kelly_values": [], "kelly_bboxes": [], "source_assets": ["asset-macau-1"]}
+        ]
+      },
+      "revision": 0
+    },
+    "european_odds": {"slot": "european_odds"},
+    "european_odds_macau": {"slot": "european_odds_macau"},
+    "total_goals": {"slot": "total_goals"},
+    "total_goals_macau": {"slot": "total_goals_macau"},
+    "kelly": {"slot": "kelly"},
+    "betfair": {
+      "slot": "betfair",
+      "assets": [{"asset_id": "asset-stats-1", "slot": "betfair", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "relative_path": "raw/slot-08/001.png", "sequence": 1, "revision": 1, "created_at": "2026-10-01T10:08:00Z"}],
+      "result": {
+        "slot": "betfair",
+        "betfair_rows": [{"selection": "home", "odds": "2.10", "traded_volume": "1200", "profit_loss": "450", "hot_cold_index": "-12", "cell_bboxes": [[0.1, 0.2, 0.3, 0.25]], "source_assets": ["asset-stats-1"]}],
+        "values": {"交易量": "1200"}
+      }
+    }
+  },
+  "messages": ["Synthetic golden fixture only"],
+  "output_path": null,
+  "outcome": {
+    "status": "finished",
+    "score_scope": "regulation_90",
+    "half_time": {"home_goals": 1, "away_goals": 0},
+    "full_time": {"home_goals": 2, "away_goals": 1},
+    "total_goals": 3,
+    "source_kind": "manual",
+    "note": null,
+    "recorded_at": "2026-10-01T22:00:00Z",
+    "updated_at": "2026-10-01T22:00:00Z",
+    "revision": 1
+  },
+  "outcome_history": [
+    {
+      "outcome": {"status": "finished", "full_time": {"home_goals": 1, "away_goals": 1}, "total_goals": 2},
+      "replaced_at": "2026-10-01T22:10:00Z",
+      "reason": "Synthetic correction"
+    }
+  ],
+  "prematch_snapshot": {
+    "payload": {"fixture": {"home_team": "Alpha", "away_team": "Beta"}, "synthetic": true},
+    "asset_sha256": ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"],
+    "snapshot_at": "2026-10-01T10:20:00Z",
+    "task_revision": 3,
+    "snapshot_timing": "frozen_before_outcome",
+    "content_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "archive_state": {"latest_revision": 4, "archived_outcome_revision": 1, "has_unarchived_changes": false},
+  "replacement_history": {"replaced_at": "2026-10-02T00:00:00Z", "previous_hashes": {"识别结果.md": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}}
+}

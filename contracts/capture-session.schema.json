@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://football-screenshot-ocr.invalid/contracts/capture-session.schema.json",
+  "title": "FootballScreenshotOcr CaptureSession v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "session_id", "task_id", "slot", "mode", "provider", "status", "started_at", "segments", "coverage", "coverage_evidence", "diagnostics", "replay", "circuit_breaker", "resource_versions", "model_versions"],
+  "allOf": [
+    {
+      "if": { "properties": { "coverage": { "const": "COMPLETE" } }, "required": ["coverage"] },
+      "then": {
+        "properties": {
+          "coverage_evidence": {
+            "properties": {
+              "top_confirmed": { "const": true },
+              "bottom_confirmed": { "const": true },
+              "adjacent_segments_connected": { "const": true },
+              "gap_count": { "const": 0 },
+              "gap_regions": { "maxItems": 0 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "session_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "slot": { "$ref": "task-manifest.schema.json#/$defs/slotKind" },
+    "mode": { "type": "string", "enum": ["AUTO", "FOLLOW", "MANUAL"] },
+    "provider": { "type": "string", "enum": ["accessibility", "media_projection", "manual_import"] },
+    "status": { "type": "string", "enum": ["PREPARING", "TOP_PENDING", "TOP_CONFIRMED", "CAPTURING", "WAITING_STABLE", "SEGMENT_COMMITTED", "WAITING_USER", "PAUSED", "BOTTOM_PENDING", "BOTTOM_CONFIRMED", "INTERRUPTED", "REVIEW_REQUIRED", "COMPLETED", "FAILED"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": ["string", "null"], "format": "date-time", "default": null },
+    "finished_at": { "type": ["string", "null"], "format": "date-time", "default": null },
+    "viewport": { "anyOf": [{ "$ref": "#/$defs/viewport" }, { "type": "null" }], "default": null },
+    "segments": { "type": "array", "items": { "$ref": "#/$defs/captureSegment" } },
+    "coverage": { "$ref": "task-manifest.schema.json#/$defs/coverage" },
+    "coverage_evidence": { "$ref": "#/$defs/coverageEvidence" },
+    "diagnostics": { "type": "array", "items": { "$ref": "task-manifest.schema.json#/$defs/captureDiagnostic" } },
+    "replay": { "$ref": "#/$defs/replayLog" },
+    "circuit_breaker": { "$ref": "#/$defs/circuitBreaker" },
+    "resource_versions": { "$ref": "task-manifest.schema.json#/$defs/resourceVersions" },
+    "model_versions": { "$ref": "task-manifest.schema.json#/$defs/modelVersions" }
+  },
+  "$defs": {
+    "insets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["top", "right", "bottom", "left"],
+      "properties": {
+        "top": { "type": "integer", "minimum": 0 },
+        "right": { "type": "integer", "minimum": 0 },
+        "bottom": { "type": "integer", "minimum": 0 },
+        "left": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "insets", "orientation"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "insets": { "$ref": "#/$defs/insets" },
+        "orientation": { "type": "string", "enum": ["portrait", "landscape", "unknown"] }
+      }
+    },
+    "captureSegment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segment_id", "asset_id", "sequence", "captured_at", "stability_result", "anchor_ids"],
+      "properties": {
+        "segment_id": { "type": "string", "minLength": 1 },
+        "asset_id": { "type": "string", "minLength": 1 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "scroll_request": { "type": ["number", "null"], "default": null },
+        "observed_movement": { "type": ["number", "null"], "default": null },
+        "stability_result": { "type": "string", "enum": ["stable", "unstable", "unknown"] },
+        "anchor_ids": { "type": "array", "items": { "type": "string" } },
+        "connected_to_previous": { "type": ["boolean", "null"], "default": null },
+        "overlap_ratio": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "default": null },
+        "ocr_reference": { "type": ["string", "null"], "default": null }
+      }
+    },
+    "coverageRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "segment_id"],
+      "properties": {
+        "start": { "type": "number", "minimum": 0 },
+        "end": { "type": "number", "minimum": 0 },
+        "segment_id": { "type": ["string", "null"] }
+      }
+    },
+    "coverageEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["top_confirmed", "bottom_confirmed", "adjacent_segments_connected", "segment_count", "minimum_overlap", "gap_count", "gap_regions", "duplicate_regions", "scroll_progress", "end_evidence"],
+      "properties": {
+        "top_confirmed": { "type": ["boolean", "null"] },
+        "bottom_confirmed": { "type": ["boolean", "null"] },
+        "adjacent_segments_connected": { "type": ["boolean", "null"] },
+        "segment_count": { "type": "integer", "minimum": 0 },
+        "minimum_overlap": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "gap_count": { "type": "integer", "minimum": 0 },
+        "gap_regions": { "type": "array", "items": { "$ref": "#/$defs/coverageRegion" } },
+        "duplicate_regions": { "type": "array", "items": { "$ref": "#/$defs/coverageRegion" } },
+        "scroll_progress": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "end_evidence": { "type": "string", "enum": ["scroll_boundary", "page_structure", "content_stability", "user_confirmed", "unknown"] }
+      }
+    },
+    "replayEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "at", "event_type"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "at": { "type": "string", "format": "date-time" },
+        "event_type": { "type": "string", "enum": ["scroll_requested", "segment_committed", "stability_observed", "coverage_decided", "paused", "resumed"] },
+        "requested_scroll": { "type": ["number", "null"], "default": null },
+        "observed_movement": { "type": ["number", "null"], "default": null },
+        "segment_id": { "type": ["string", "null"], "default": null },
+        "coverage": { "anyOf": [{ "$ref": "task-manifest.schema.json#/$defs/coverage" }, { "type": "null" }], "default": null },
+        "message": { "type": ["string", "null"], "default": null }
+      }
+    },
+    "replayLog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["events"],
+      "properties": { "events": { "type": "array", "items": { "$ref": "#/$defs/replayEvent" } } }
+    },
+    "circuitBreaker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_segments", "max_scroll_attempts", "max_no_progress", "max_stability_wait_ms", "max_session_duration_ms"],
+      "properties": {
+        "max_segments": { "type": "integer", "minimum": 1 },
+        "max_scroll_attempts": { "type": "integer", "minimum": 1 },
+        "max_no_progress": { "type": "integer", "minimum": 1 },
+        "max_stability_wait_ms": { "type": "integer", "minimum": 1 },
+        "max_session_duration_ms": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

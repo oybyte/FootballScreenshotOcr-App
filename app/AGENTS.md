@@ -1,6 +1,6 @@
 # `:app` 模块规则
 
-本规则只补充根 `AGENTS.md`，不降低根规则。当前 `app` 是仓库唯一 Android 模块，仍是 Compose 示例工程；计划中的 feature、core、data、ocr、parser 模块不存在时不要在这里假设它们已可调用。
+本规则只补充根 `AGENTS.md`，不降低根规则。`:app` 是 Android application 和 Compose 示例入口；P0A 已建立 `:core`、`:data`、`:ocr`、`:parser` 与 feature library 模块。模块骨架已可构建，但不能据此假设 Hilt、Room 或产品业务流程已接线。
 
 ## 职责
 

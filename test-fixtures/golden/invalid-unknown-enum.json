@@ -1,0 +1,6 @@
+{
+  "schema_version": 7,
+  "slots": {
+    "asian_handicap": {"slot": "asian_handicap", "state": "mystery_state"}
+  }
+}

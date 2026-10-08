@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://football-screenshot-ocr.invalid/contracts/task-manifest.schema.json",
+  "title": "FootballScreenshotOcr TaskManifest v7",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": { "const": 7 },
+    "task_id": { "type": "string", "default": "" },
+    "created_at": { "$ref": "#/$defs/dateTime" },
+    "updated_at": { "$ref": "#/$defs/dateTime" },
+    "last_operation_at": { "anyOf": [{ "$ref": "#/$defs/dateTime" }, { "type": "null" }], "default": null },
+    "status": { "$ref": "#/$defs/taskStatus", "default": "draft" },
+    "revision": { "type": "integer", "default": 0 },
+    "fixture": { "anyOf": [{ "$ref": "#/$defs/fixtureIdentity" }, { "type": "null" }], "default": null },
+    "slots": {
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/slotKind" },
+      "additionalProperties": { "$ref": "#/$defs/slotRecord" },
+      "default": {}
+    },
+    "messages": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "output_path": { "type": ["string", "null"], "default": null },
+    "outcome": { "$ref": "#/$defs/matchOutcome", "default": {} },
+    "outcome_history": { "type": "array", "items": { "$ref": "#/$defs/outcomeRevision" }, "default": [] },
+    "prematch_snapshot": { "anyOf": [{ "$ref": "#/$defs/prematchSnapshot" }, { "type": "null" }], "default": null },
+    "archive_state": { "$ref": "#/$defs/archiveState", "default": {} },
+    "replacement_history": { "anyOf": [{ "$ref": "#/$defs/replacementHistory" }, { "type": "null" }], "default": null },
+    "capture_session_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [] },
+    "resource_versions": { "$ref": "#/$defs/resourceVersions", "default": {} },
+    "model_versions": { "$ref": "#/$defs/modelVersions", "default": {} }
+  },
+  "$defs": {
+    "dateTime": { "type": "string", "format": "date-time" },
+    "slotKind": { "type": "string", "enum": ["asian_handicap", "asian_handicap_macau", "european_odds", "european_odds_macau", "total_goals", "total_goals_macau", "kelly", "betfair"] },
+    "taskStatus": { "type": "string", "enum": ["draft", "queued", "recognizing", "ready", "blocked", "finished", "cancelled"] },
+    "slotState": { "type": "string", "enum": ["empty", "images_ready", "user_marked_flat", "recognizing", "valid", "warning", "error"] },
+    "outcomeStatus": { "type": "string", "enum": ["not_recorded", "finished", "void", "abandoned"] },
+    "captureSource": { "type": "string", "enum": ["legacy", "accessibility", "media_projection", "manual_import"] },
+    "coverage": { "type": "string", "enum": ["NOT_APPLICABLE", "NOT_RECORDED", "COMPLETE", "LIKELY_COMPLETE", "GAP_SUSPECTED", "INCOMPLETE"] },
+    "normalizedBbox": {
+      "type": "array",
+      "description": "LTRB coordinates normalized against the original image.",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "sourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["manual", "catalog", "network", "import"] },
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "type": ["string", "null"], "default": null }
+      }
+    },
+    "fieldEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_text", "asset_id"],
+      "properties": {
+        "raw_text": { "type": "string" },
+        "value": { "type": ["string", "null"], "default": null },
+        "asset_id": { "type": "string" },
+        "bbox": { "anyOf": [{ "$ref": "#/$defs/normalizedBbox" }, { "type": "null" }], "default": null },
+        "confidence": { "type": ["number", "null"], "default": null }
+      }
+    },
+    "imageAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "sha256", "relative_path", "sequence"],
+      "properties": {
+        "asset_id": { "type": "string", "default": "" },
+        "slot": { "$ref": "#/$defs/slotKind" },
+        "sha256": { "type": "string" },
+        "relative_path": { "type": "string" },
+        "sequence": { "type": "integer" },
+        "revision": { "type": "integer", "default": 1 },
+        "created_at": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "fixtureIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "competition": { "type": ["string", "null"], "default": null },
+        "home_team": { "type": ["string", "null"], "default": null },
+        "away_team": { "type": ["string", "null"], "default": null },
+        "kickoff_display": { "type": ["string", "null"], "default": null },
+        "sport_lottery_handicap": { "type": ["integer", "null"], "default": null },
+        "sport_lottery_serial": { "type": ["string", "null"], "default": null },
+        "sport_lottery_source": { "type": ["string", "null"], "default": null },
+        "user_edited": { "type": "boolean", "default": false },
+        "competition_user_edited": { "type": "boolean", "default": false },
+        "competition_fixture_id": { "type": ["string", "null"], "default": null },
+        "competition_catalog_version": { "type": ["integer", "null"], "default": null },
+        "competition_catalog_source": { "type": ["string", "null"], "default": null },
+        "field_sources": { "type": "object", "additionalProperties": { "$ref": "#/$defs/sourceReference" }, "default": {} }
+      }
+    },
+    "matchScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["home_goals", "away_goals"],
+      "properties": {
+        "home_goals": { "type": "integer", "minimum": 0 },
+        "away_goals": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "matchOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": { "$ref": "#/$defs/outcomeStatus", "default": "not_recorded" },
+        "score_scope": { "type": "string", "default": "regulation_90" },
+        "half_time": { "anyOf": [{ "$ref": "#/$defs/matchScore" }, { "type": "null" }], "default": null },
+        "full_time": { "anyOf": [{ "$ref": "#/$defs/matchScore" }, { "type": "null" }], "default": null },
+        "total_goals": { "type": ["integer", "null"], "minimum": 0, "default": null },
+        "source_kind": { "type": "string", "default": "manual" },
+        "note": { "type": ["string", "null"], "default": null },
+        "recorded_at": { "anyOf": [{ "$ref": "#/$defs/dateTime" }, { "type": "null" }], "default": null },
+        "updated_at": { "anyOf": [{ "$ref": "#/$defs/dateTime" }, { "type": "null" }], "default": null },
+        "revision": { "type": "integer", "default": 0 }
+      }
+    },
+    "outcomeRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "replaced_at"],
+      "properties": {
+        "outcome": { "$ref": "#/$defs/matchOutcome" },
+        "replaced_at": { "$ref": "#/$defs/dateTime" },
+        "reason": { "type": ["string", "null"], "default": null }
+      }
+    },
+    "prematchSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload", "snapshot_at", "task_revision", "content_sha256"],
+      "properties": {
+        "payload": { "type": "object", "additionalProperties": true },
+        "asset_sha256": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "snapshot_at": { "$ref": "#/$defs/dateTime" },
+        "task_revision": { "type": "integer" },
+        "snapshot_timing": { "type": "string", "default": "frozen_before_outcome" },
+        "content_sha256": { "type": "string" }
+      }
+    },
+    "archiveState": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "latest_revision": { "type": "integer", "default": 0 },
+        "archived_outcome_revision": { "type": "integer", "default": 0 },
+        "has_unarchived_changes": { "type": "boolean", "default": false }
+      }
+    },
+    "overviewRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_name"],
+      "properties": {
+        "provider_name": { "type": "string" },
+        "provider_id": { "type": ["string", "null"], "default": null },
+        "provider_raw_name": { "type": ["string", "null"], "default": null },
+        "provider_raw_names": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "provider_confirmed": { "type": "boolean", "default": false },
+        "provider_name_bboxes": { "type": "array", "items": { "$ref": "#/$defs/normalizedBbox" }, "default": [] },
+        "provider_name_evidences": { "type": "array", "items": { "$ref": "#/$defs/fieldEvidence" }, "default": [] },
+        "opening": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "late": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "opening_bboxes": { "type": "array", "items": { "$ref": "#/$defs/normalizedBbox" }, "default": [] },
+        "late_bboxes": { "type": "array", "items": { "$ref": "#/$defs/normalizedBbox" }, "default": [] },
+        "source_assets": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "macauTimelineRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayed_at"],
+      "properties": {
+        "displayed_at": { "type": "string" },
+        "status": { "type": "string", "default": "即" },
+        "values": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "values_bboxes": { "type": "array", "items": { "$ref": "#/$defs/normalizedBbox" }, "default": [] },
+        "return_rate": { "type": ["string", "null"], "default": null },
+        "kelly_values": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "kelly_bboxes": { "type": "array", "items": { "$ref": "#/$defs/normalizedBbox" }, "default": [] },
+        "source_assets": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "conflictRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "values", "source_assets"],
+      "properties": {
+        "key": { "type": "string" },
+        "values": { "type": "array", "items": { "type": "string" } },
+        "asset_bboxes": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [{ "type": "string" }, { "$ref": "#/$defs/normalizedBbox" }],
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "default": []
+        },
+        "source_assets": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "betfairRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selection"],
+      "properties": {
+        "selection": { "type": "string" },
+        "odds": { "type": ["string", "null"], "default": null },
+        "traded_volume": { "type": ["string", "null"], "default": null },
+        "profit_loss": { "type": ["string", "null"], "default": null },
+        "hot_cold_index": { "type": ["string", "null"], "default": null },
+        "cell_bboxes": { "type": "array", "items": { "$ref": "#/$defs/normalizedBbox" }, "default": [] },
+        "source_assets": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "slotResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot"],
+      "properties": {
+        "slot": { "$ref": "#/$defs/slotKind" },
+        "fixture": { "anyOf": [{ "$ref": "#/$defs/fixtureIdentity" }, { "type": "null" }], "default": null },
+        "overview_rows": { "type": "array", "items": { "$ref": "#/$defs/overviewRow" }, "default": [] },
+        "timeline_rows": { "type": "array", "items": { "$ref": "#/$defs/macauTimelineRow" }, "default": [] },
+        "betfair_rows": { "type": "array", "items": { "$ref": "#/$defs/betfairRow" }, "default": [] },
+        "values": { "type": "object", "additionalProperties": { "type": "string" }, "default": {} },
+        "evidences": { "type": "array", "items": { "$ref": "#/$defs/fieldEvidence" }, "default": [] },
+        "conflicts": { "type": "array", "items": { "$ref": "#/$defs/conflictRecord" }, "default": [] },
+        "warnings": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "errors": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "captureDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": { "type": "string", "enum": ["TOP_UNKNOWN", "BOTTOM_UNKNOWN", "SCROLL_BLOCKED", "STABILITY_TIMEOUT", "GAP_SUSPECTED", "CAPTURE_BLOCKED"] },
+        "severity": { "type": "string", "enum": ["info", "warning", "error"] },
+        "message": { "type": "string" },
+        "recorded_at": { "anyOf": [{ "$ref": "#/$defs/dateTime" }, { "type": "null" }], "default": null },
+        "segment_id": { "type": ["string", "null"], "default": null },
+        "asset_id": { "type": ["string", "null"], "default": null }
+      }
+    },
+    "slotRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot"],
+      "properties": {
+        "slot": { "$ref": "#/$defs/slotKind" },
+        "state": { "$ref": "#/$defs/slotState", "default": "empty" },
+        "assets": { "type": "array", "items": { "$ref": "#/$defs/imageAsset" }, "default": [] },
+        "result": { "anyOf": [{ "$ref": "#/$defs/slotResult" }, { "type": "null" }], "default": null },
+        "messages": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "revision": { "type": "integer", "default": 0 },
+        "capture_source": { "$ref": "#/$defs/captureSource", "default": "legacy" },
+        "coverage": { "$ref": "#/$defs/coverage", "default": "NOT_RECORDED" },
+        "capture_session_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [] },
+        "capture_segment_ids": { "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [] },
+        "diagnostics": { "type": "array", "items": { "$ref": "#/$defs/captureDiagnostic" }, "default": [] }
+      }
+    },
+    "replacementHistory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replaced_at"],
+      "properties": {
+        "replaced_at": { "type": "string" },
+        "previous_hashes": { "type": "object", "additionalProperties": { "type": "string" }, "default": {} }
+      }
+    },
+    "resourceVersions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider_catalog": { "type": ["string", "null"], "default": null },
+        "layout_catalog": { "type": ["string", "null"], "default": null },
+        "prompt": { "type": ["string", "null"], "default": null },
+        "template": { "type": ["string", "null"], "default": null }
+      }
+    },
+    "modelVersions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ocr_model": { "type": ["string", "null"], "default": null },
+        "ocr_model_sha256": { "type": ["string", "null"], "pattern": "^[a-fA-F0-9]{64}$", "default": null },
+        "preprocessing": { "type": ["string", "null"], "default": null }
+      }
+    }
+  }
+}

@@ -12,10 +12,19 @@ Android 的产品角色是盘口页面旁的移动采集副驾：采集当前屏
 
 规则必须区分“目标架构”和“当前事实”：
 
-- 当前仓库只有 `:app` Android Gradle 工程和 Compose 示例入口；业务模块、Hilt、Room、OCR、Parser、LongCapture 尚未实现。
-- 当前 `app` 的 `minSdk` 是 24；v2.1 基线目标是 `minSdk 30`、`compileSdk 36`、`targetSdk 36`。不得把目标值写成当前已实现事实，也不得在无关任务中顺手修改 Gradle。
-- 当前检出没有 Windows/Python 源码、Windows 测试、`resources/`、`contracts/` 或 golden fixtures。需要它们时必须先定位真实来源并记录差异，不能凭旧文档补造。
+- P0A 已建立 `:app`、`:core`、`:data`、`:ocr`、`:parser` 和五个 feature 模块。`:core`、`:parser` 是纯 Kotlin/JVM；`:data`、`:ocr`、feature 是 Android library；`:app` 是 application。模块骨架不代表 Hilt、Room、OCR、Parser 业务流程或 LongCapture 已完成。
+- 当前 Android SDK 基线为 `minSdk 30`、`compileSdk 36`、`targetSdk 36`；版本统一登记在 `gradle/libs.versions.toml`，Gradle daemon 使用 JDK 21。改动这些值仍须由明确任务授权。
+- `contracts/` 与 `test-fixtures/golden/` 由 Android 仓库唯一维护。当前 Windows 仓库不在本仓库内；其 v6 运行时和开发期共享契约校验入口位于独立 Windows/Python 仓库。
 - v2.1 是 Android 实施基线；与代码不一致时遵循“事实检查、明确记录差异、再按任务处理”，不得静默改变业务规则。
+
+## v7 共享契约
+
+- `contracts/task-manifest.schema.json` 和 `contracts/capture-session.schema.json` 是字段、枚举、默认值及兼容语义的唯一事实源；Kotlin 类型和测试必须与其一致。
+- `:core` 持有 `TaskManifestV7`、`CaptureSessionV1` 及纯 Kotlin `migrateV6ToV7`。未知字段和未知枚举严格拒绝；缺失与显式 `null` 按 Schema 明确区分。
+- v6→v7 保留所有已知 v6 字段（包括 `outcome_history`、`prematch_snapshot`、`archive_state`、`replacement_history`），旧采集来源映射为 `legacy`，未记录 coverage 映射为 `not_recorded`。降级 v7→v6 不得静默丢弃数据。
+- 截图证据以稳定 `asset_id` 和原图归一化 bbox 为准。冲突必须保留双方值和各自证据；Golden fixtures 使用 synthetic 内容，不复制真实比赛数据或截图。
+- Python 的 `scripts/validate_contracts.py` 仅是 Windows 仓库的开发期 Schema 校验器，不表示 Windows v6 运行时已支持 v7。完整 Windows v7 读写和 Renderer 支持属于 P0B。
+- Android 端验证：`./gradlew clean test assembleDebug verifyModuleBoundaries`（Windows 使用 `gradlew.bat`）。Windows 端从其仓库设置 `FSO_ANDROID_CONTRACTS_DIR` 指向本仓库 `contracts/` 后运行 pytest；工具也支持显式 `--contracts-dir` 参数。
 
 ## 产品红线
 

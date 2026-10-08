@@ -38,4 +38,15 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "FootballScreenshotOcr"
-include(":app")
+include(
+    ":app",
+    ":core",
+    ":data",
+    ":ocr",
+    ":parser",
+    ":feature-task",
+    ":feature-capture",
+    ":feature-review",
+    ":feature-result",
+    ":feature-settings",
+)

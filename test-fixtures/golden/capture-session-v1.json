@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "session_id": "session-synthetic-001",
+  "task_id": "synthetic-task-001",
+  "slot": "asian_handicap",
+  "mode": "FOLLOW",
+  "provider": "accessibility",
+  "status": "COMPLETED",
+  "started_at": "2026-10-01T10:00:00Z",
+  "updated_at": "2026-10-01T10:08:00Z",
+  "finished_at": "2026-10-01T10:08:00Z",
+  "viewport": {"width": 1080, "height": 2400, "insets": {"top": 80, "right": 0, "bottom": 100, "left": 0}, "orientation": "portrait"},
+  "segments": [
+    {"segment_id": "segment-001", "asset_id": "asset-ah-1", "sequence": 1, "captured_at": "2026-10-01T10:05:00Z", "scroll_request": null, "observed_movement": null, "stability_result": "stable", "anchor_ids": ["anchor-row-1"], "connected_to_previous": null, "overlap_ratio": null, "ocr_reference": null},
+    {"segment_id": "segment-002", "asset_id": "asset-ah-2", "sequence": 2, "captured_at": "2026-10-01T10:06:00Z", "scroll_request": 900, "observed_movement": 820, "stability_result": "stable", "anchor_ids": ["anchor-row-1", "anchor-row-2"], "connected_to_previous": true, "overlap_ratio": 0.28, "ocr_reference": null}
+  ],
+  "coverage": "COMPLETE",
+  "coverage_evidence": {
+    "top_confirmed": true,
+    "bottom_confirmed": true,
+    "adjacent_segments_connected": true,
+    "segment_count": 2,
+    "minimum_overlap": 0.28,
+    "gap_count": 0,
+    "gap_regions": [],
+    "duplicate_regions": [{"start": 0.4, "end": 0.6, "segment_id": "segment-002"}],
+    "scroll_progress": 1,
+    "end_evidence": "scroll_boundary"
+  },
+  "diagnostics": [
+    {
+      "code": "SCROLL_BLOCKED",
+      "severity": "warning",
+      "message": "Synthetic first scroll attempt was rejected; capture resumed after user input",
+      "recorded_at": "2026-10-01T10:05:30Z",
+      "segment_id": null,
+      "asset_id": null
+    }
+  ],
+  "replay": {
+    "events": [
+      {"sequence": 1, "at": "2026-10-01T10:05:00Z", "event_type": "segment_committed", "requested_scroll": null, "observed_movement": null, "segment_id": "segment-001", "coverage": null, "message": null},
+      {"sequence": 2, "at": "2026-10-01T10:06:00Z", "event_type": "scroll_requested", "requested_scroll": 900, "observed_movement": 820, "segment_id": null, "coverage": null, "message": null},
+      {"sequence": 3, "at": "2026-10-01T10:08:00Z", "event_type": "coverage_decided", "requested_scroll": null, "observed_movement": null, "segment_id": null, "coverage": "COMPLETE", "message": "Synthetic evidence only"}
+    ]
+  },
+  "circuit_breaker": {"max_segments": 40, "max_scroll_attempts": 60, "max_no_progress": 3, "max_stability_wait_ms": 5000, "max_session_duration_ms": 300000},
+  "resource_versions": {"provider_catalog": "synthetic-1", "layout_catalog": null, "prompt": null, "template": null},
+  "model_versions": {"ocr_model": null, "ocr_model_sha256": null, "preprocessing": null}
+}

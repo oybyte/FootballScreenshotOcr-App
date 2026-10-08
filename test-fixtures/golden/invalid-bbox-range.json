@@ -1,0 +1,12 @@
+{
+  "schema_version": 7,
+  "slots": {
+    "asian_handicap": {
+      "slot": "asian_handicap",
+      "result": {
+        "slot": "asian_handicap",
+        "evidences": [{"raw_text": "1.00", "asset_id": "asset-ah-1", "bbox": [0.1, 0.2, 1.2, 0.4]}]
+      }
+    }
+  }
+}

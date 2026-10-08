@@ -5,15 +5,11 @@ plugins {
 
 android {
     namespace = "com.fifa.ocr"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.fifa.ocr"
-        minSdk = 24
+        minSdk = 30
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -38,6 +34,15 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
+    implementation(project(":data"))
+    implementation(project(":ocr"))
+    implementation(project(":parser"))
+    implementation(project(":feature-task"))
+    implementation(project(":feature-capture"))
+    implementation(project(":feature-review"))
+    implementation(project(":feature-result"))
+    implementation(project(":feature-settings"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
