@@ -16,4 +16,6 @@ dependencies {
     implementation(project(":ocr"))
     implementation(project(":parser"))
     implementation(project(":core"))
+    implementation(libs.androidx.core.ktx)
+    testImplementation(libs.junit)
 }

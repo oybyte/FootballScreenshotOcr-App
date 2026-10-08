@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_capture_service">FootballScreenshotOcr 屏幕采集</string>
+    <string name="accessibility_capture_description">仅在用户主动操作时截取当前屏幕，用于盘口截图预览。</string>
+</resources>
