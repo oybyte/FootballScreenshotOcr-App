@@ -6,19 +6,20 @@ FootballScreenshotOcr 是一个面向足球盘口截图的本地化采集与结�
 
 ## 当前状态
 
-仓库目前是 Android 初始工程，已完成 Gradle 基础配置和示例页面，核心业务能力尚未实现。方案文档描述的是目标产品和分阶段实施契约，不代表当前 APK 已经支持对应功能。
+当前仓库已完成 P0A 工程基线和 P1 单屏采集 Spike 的代码实现。P1 工作台支持无障碍截图、悬浮入口、MediaProjection 降级、图片选择器、系统分享导入和安全窗口诊断；结果只保留在当前进程内存中，不写任务、原图或导出文件。自动化构建和 `emulator-5554` instrumentation 已通过，但投影撤销、权限撤销、分享导入等完整手工矩阵仍为 `pending`，不能据此宣称真实 OEM 或 Google Play 已验证。
 
 当前可确认的工程事实：
 
 - 应用模块为 `app`，包名为 `com.fifa.ocr`。
-- 当前入口使用 Jetpack Compose 示例页面，显示 `Hello Android!`。
-- `compileSdk`、`targetSdk` 为 API 36，当前模板 `minSdk` 为 24。
-- 当前仓库尚未包含 `core-domain`、`core-capture`、`core-ocr`、`core-parser` 等计划中的业务模块。
+- 当前入口是 Jetpack Compose P1 屏幕采集工作台，包名为 `com.fifa.ocr`。
+- `minSdk` 为 30，`compileSdk` 和 `targetSdk` 为 API 36；版本统一登记在 `gradle/libs.versions.toml`。
+- 当前工程包含 `:app`、`:core`、`:data`、`:ocr`、`:parser`、`:feature-task`、`:feature-capture`、`:feature-review`、`:feature-result` 和 `:feature-settings`。模块边界可构建，但 Hilt、Room、OCR、Parser 业务流程、Navigation 和 LongCapture 尚未接线。
 - 方案第 76 节仍按“仓库只有 Python / PySide6 Windows 应用”的历史前提描述交付边界；当前检出实际是 Android Gradle 工程，后续不应机械地再创建一个重复的 `android/` 根工程。
-- 方案引用的 `resources/`、`contracts/`、`testdata/golden/` 和 Windows 端实现当前不在本仓库中；跨端迁移前需要确认它们的来源、版本和纳入方式。
+- `contracts/` 和 `test-fixtures/golden/` 已由 Android 仓库维护；Windows/Python 运行时仍在独立仓库，完整 v7 读写和 Renderer 支持属于 P0B。
+- 工作台展示的权限与运行状态生命周期不同：无障碍开关和悬浮窗授权由 Android 系统保存；Accessibility 连接、悬浮入口服务和 MediaProjection 会话是运行时状态，进程/服务结束后需要重新建立，其中 MediaProjection 每次会话都必须重新取得用户同意。当前页面初始状态先填 `false`、再于 `onResume()` 查询系统，重启时可能短暂显示“未授权”；这属于待修复的状态呈现问题，不代表系统授权必然丢失。
 - Android 详细方案见 [FootballScreenshotOcr-Android版详细开发方案-补充完善版.md](FootballScreenshotOcr-Android版详细开发方案-补充完善版.md)。
 
-方案最终建议使用原生 Android View 作为 UI，而当前模板使用 Compose；正式进入 UI 实施前需要明确是迁移到原生 View，还是记录为有意偏离并统一后续技术决策。
+Android UI 采用 Compose，与根 `AGENTS.md` 和 Decision 0001 一致；方案文档中关于原生 View 的早期建议不再作为当前实现要求。
 
 ## 产品用途
 
@@ -37,6 +38,8 @@ FootballScreenshotOcr 是一个面向足球盘口截图的本地化采集与结�
   -> 任务状态更新
   -> Markdown + JSON
 ```
+
+上述 OCR、分槽、合并、校验和导出目前属于目标流程，不是 P1 已交付能力。当前 P1 只实现单屏采集、图片导入和内存预览。
 
 用户负责查看页面和在必要时滚动；程序负责采集、判型、分槽、OCR、合并、校验、保存和展示异常。自动采集不可用时，应降级到用户手动滚动、相册导入或分享导入，而不是把一次失败的自动滚动伪装成完整结果。
 
@@ -131,22 +134,27 @@ history/ 历史版本
 training_cases/ 训练样本
 ```
 
-Android 采集会话是过程记录，不替代比赛任务和槽位。任务、图片、会话和历史版本应支持暂停、恢复、重启恢复以及进程被杀后的诊断。推荐以任务 JSON 和原始图片作为可移植持久化事实来源，数据库只承担可重建索引或经验证后的查询加速；任何文件提交失败都必须保留可恢复的原图，不能生成“完整成功”结果。
+目标架构中 Room 是任务运行事实源，Files 保存原图、revision 和导出物，DataStore 只保存轻量设置。P1 尚未引入持久化：当前预览 Bitmap 只在内存中保留，进程重启后自然丢失。P2 才处理 `CaptureSession`、原图事务、哈希去重、暂停/继续和进程恢复；任何文件提交失败都必须保留可恢复原图，不能生成“完整成功”结果。
 
 “复制给 AI”继续使用“分析指令全文 + 盘口数据”的格式，并排除赛果内容。应用只在本地处理数据，不自动上传。
 
 ## 目标架构
 
-计划中的模块边界如下：
+当前模块边界如下：
 
 ```text
-app/             Activity、UI、悬浮层、Service、权限
-core-domain/     Task、Slot、比赛身份、证据模型
-core-capture/    截图、滚动、LongCapture、Coverage
-core-ocr/        OCR、队列、预处理、证据映射
-core-parser/     判型、槽位路由、解析、合并、校验
-core-storage/    文件、数据库、设置和恢复
-test-fixtures/   脱敏截图、期望 JSON、Markdown 和诊断
+:app             Activity、Compose UI、悬浮层、Service、权限入口
+:core            v7 契约、迁移和共享纯 Kotlin 模型
+:data            Android data 层骨架
+:ocr             OCR 模块骨架
+:parser          纯 Kotlin Parser 模块骨架
+:feature-task    任务模块骨架
+:feature-capture 采集入口和 provider
+:feature-review  核对模块骨架
+:feature-result  结果模块骨架
+:feature-settings 设置模块骨架
+contracts/       Android 唯一维护的 v7 Schema
+test-fixtures/   脱敏 Golden fixture 和期望输出
 ```
 
 Android 不运行 Python Runtime。Windows 与 Android 通过版本化的数据契约、资源版本和 golden fixtures 对齐，而不是互相直接调用：
@@ -178,8 +186,8 @@ AccessibilityService 适合验证截图、节点滚动和跟随事件，但 Goog
 
 推荐按以下出口推进：
 
-1. P0：冻结数据契约、槽位边界、资源版本和发布目标。
-2. P1：在真实设备验证悬浮窗、截图、权限拒绝、手动跟随和进程恢复。
+1. P0：冻结数据契约、槽位边界、资源版本和发布目标（P0A 已完成，P0B Windows v7 运行时仍待做）。
+2. P1：完成单屏采集 Spike；当前模拟器自动化已通过，完整手工验收仍待收尾。
 3. P2：完成 `CaptureSession`、原图落盘、暂停/继续和恢复，不接 OCR。
 4. P3：完成 Stability、Anchor、Coverage、Bottom 状态和长页面合成测试。
 5. P4：在目标设备对比 Android OCR 与 Windows 基线，记录耗时、内存、温升和字段差异。
@@ -213,12 +221,17 @@ AccessibilityService 适合验证截图、节点滚动和跟随事件，但 Goog
 .\gradlew.bat test
 ```
 
-当前仓库只有示例应用，因此上述命令验证的是 Gradle 工程和模板测试；真正的业务验收还需要脱敏 golden fixtures、LongCapture 合成测试和真实设备测试。
+当前可执行的主要门禁为：
+
+```powershell
+.\gradlew.bat clean test assembleDebug verifyModuleBoundaries --no-configuration-cache
+.\gradlew.bat connectedDebugAndroidTest --no-configuration-cache
+```
+
+前者验证十模块编译、单元测试和依赖边界；后者在 `emulator-5554` 上验证 Compose、安全窗口和图片导入 instrumentation。P2 之前不宣称 Room、OCR、LongCapture、业务导航或真实设备兼容已完成。
 
 ## 相关文档
 
 - [Android 版详细开发方案](FootballScreenshotOcr-Android版详细开发方案-补充完善版.md)：产品定位、业务不变量、架构、平台限制、跨端契约和验收标准。
 - [Gradle 配置](build.gradle.kts)：根工程插件配置。
 - [应用模块](app/build.gradle.kts)：当前 Android 模块、SDK 和依赖配置。
-
-# FootballScreenshotOcr-App

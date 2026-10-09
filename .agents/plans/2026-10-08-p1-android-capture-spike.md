@@ -1,15 +1,20 @@
 # P1 Android Single-Device Capture Spike
 
+Status: implementation complete; emulator manual acceptance pending.
+
 ## Goal
 
-Replace the sample screen with a minimal capture workbench that can capture the foreground display from a floating entry point, preview it in memory, and import an image through Photo Picker or Android Sharesheet. Verify the capture permission and fallback paths on the user's single daily-use device when its identity is confirmed.
+Replace the sample screen with a minimal capture workbench that can capture the foreground display from a floating entry point, preview it in memory, and import an image through Photo Picker or Android Sharesheet. The dedicated `emulator-5554` is the only P1 acceptance target; this phase does not claim real OEM compatibility or Play compliance.
 
 ## Current State
 
-- Android repository is on `main` at local commit `901f619`, one commit ahead of `origin/main`; do not rewrite or push unrelated history.
-- P0A modules and v7 `CaptureSessionV1`/diagnostic contracts exist. `:feature-capture` has only a Gradle skeleton; the app is still the Compose greeting sample and its manifest has no capture services or permissions.
+- Android repository is on `main` at `0666d2f`, synchronized with `origin/main`; the P1 implementation and tests are committed.
+- P0A modules and v7 `CaptureSessionV1`/diagnostic contracts exist. P1 provides the Compose workbench, Accessibility and MediaProjection providers, floating entry point, bounded image import, secure-window diagnostics, and in-memory preview.
 - `.idea/compiler.xml`, `.idea/gradle.xml`, and `.idea/misc.xml` have pre-existing user modifications; preserve them.
-- ADB exposes `emulator-5554`, API 34 / Android 14, but reports model `25060RK16C`, manufacturer `REDMI`, and a Samsung build fingerprint. Device identity is unconfirmed, so report device acceptance as pending until reconciled.
+- The only acceptance target is the dedicated `emulator-5554`: API 34 / Android 14, 720x1280. Its reported model/manufacturer/fingerprint conflict, so it is recorded as an emulator-only target and never as a confirmed real phone.
+- A live read on 2026-10-09 found Accessibility disabled, overlay AppOp allowed, the floating service running, and no active projection service. These are point-in-time runtime facts, not completed acceptance evidence.
+- Known startup UX issue: `CaptureWorkbenchUiState` initializes all permission fields to `false`; `refreshPermissions()` runs in `onResume()` after the first composition. A restart can briefly show “未授权” before the system snapshot is read. This display race does not itself prove that Android revoked a permission.
+- State semantics: Accessibility enabled and overlay AppOp are system settings; Accessibility connected and floating-service-running are process/service runtime facts; MediaProjection is a one-session consent and cannot be restored after process/service teardown. Manual verification must report these separately.
 - Android API guidance confirms API 34+ MediaProjection foreground-service declaration, per-session consent and one VirtualDisplay creation per projection token. Accessibility screenshot APIs are available from minSdk 30. Android Sharesheet image intake uses content URIs.
 
 ## Invariants
@@ -52,7 +57,8 @@ Replace the sample screen with a minimal capture workbench that can capture the 
 3. [x] Implement the MediaProjection foreground service and provider with per-session consent, one VirtualDisplay, one-shot frame delivery, stop/revocation cleanup, and notification.
 4. [x] Implement floating foreground service, permission/settings actions, hide/capture/restore orchestration, and foreground-safe projection fallback.
 5. [x] Replace greeting with the P1 workbench, permission status, picker/share intake, errors/loading states, and memory-only preview; add Compose state/interaction tests and a FLAG_SECURE instrumentation fixture.
-6. [in progress] Run unit/instrumented tests and `gradlew.bat clean test assembleDebug`; install and exercise the build only after confirming the connected target is the intended phone. Update this plan and Decision 0005 fact status from observed evidence.
+6a. [x] Run unit/instrumented tests, `gradlew.bat clean test assembleDebug verifyModuleBoundaries --no-configuration-cache`, and install the Debug APK on `emulator-5554`.
+6b. [ ] Complete the emulator manual matrix: Accessibility/overlay revoke and recovery, projection reject/success/notification stop/re-authorize, picker/share import, secure-window behavior, overlay restoration, and three repeated capture cycles. Keep this step pending until each path has direct evidence.
 
 ## Compatibility
 
@@ -68,17 +74,17 @@ Replace the sample screen with a minimal capture workbench that can capture the 
 - Compose UI tests: permission states, enabled/disabled actions, loading/failure/success preview, image import success/failure.
 - Instrumented test: a `FLAG_SECURE` test activity is actually secure and its screenshot error maps to `CAPTURE_BLOCKED`; this does not replace manual validation of OEM Accessibility behavior.
 - Build: `gradlew.bat clean test assembleDebug verifyModuleBoundaries`.
-- Device: confirm serial/model/manufacturer/API/fingerprint; exercise accessibility grant/revoke, overlay grant/revoke, clean overlay capture, projection consent/denial/revocation, Photos Picker, Sharesheet, and secure-window failure. If identity remains ambiguous or only an emulator is connected, leave device acceptance pending.
+- Device: use `emulator-5554` only. Record serial, API, resolution, and the conflicting identity properties; exercise Accessibility grant/revoke, overlay grant/revoke, clean overlay capture, projection consent/denial/revocation, Photos Picker, Sharesheet, and secure-window failure. Identity conflict does not block emulator-only acceptance, but prevents any real-device claim.
 - Review `git diff --check` and ensure only Android P1 files plus this plan changed; preserve IDE changes.
 
-### Evidence (2026-10-08)
+### Evidence (2026-10-09)
 
-- `gradlew.bat clean test assembleDebug verifyModuleBoundaries`: passed in this validation run. All declared modules completed their build tasks, code-bearing modules compiled, the Debug APK assembled, and the module-boundary task passed. Gradle reports one configuration-cache warning because `verifyModuleBoundaries` inspects Gradle script objects; the task itself passed.
+- `gradlew.bat clean test assembleDebug verifyModuleBoundaries --no-configuration-cache`: passed. All declared modules compiled, the Debug APK assembled, and the module-boundary task passed. The task is intentionally incompatible with configuration cache because it inspects Gradle project dependencies.
 - Unit-test reports: 16 tests passed across `:app`, `:core`, `:feature-capture`, and `:parser`; 0 failures, 0 errors, 0 skipped.
-- `gradlew.bat connectedDebugAndroidTest`: passed on `emulator-5554` (API 34); 4 instrumentation tests passed, including the secure-window fixture and capture workbench UI tests.
+- `gradlew.bat connectedDebugAndroidTest --no-configuration-cache`: passed on `emulator-5554` (API 34); 8 instrumentation tests passed, including secure-window, Compose workbench, and fake image import tests.
 - `git diff --check`: passed.
-- Debug APK installed and `com.fifa.ocr/.MainActivity` launched on ADB target `emulator-5554`; no crash observed in launch log and the P1 workbench rendered.
-- Device-only acceptance remains `pending`: connected target reports API 34, model `25060RK16C`, manufacturer `REDMI`, device `star2qltechn`, and Samsung build fingerprint `samsung/star2qltezh/star2qltechn:14/...`; this is an emulator-like target with conflicting identity, not confirmed as the user's daily phone. Accessibility/overlay interaction was exercised earlier on this target, but projection consent/revocation, picker/share intake, and confirmed real-device behavior remain pending.
+- Debug APK is installed and `com.fifa.ocr/.MainActivity` launches on `emulator-5554`; non-sensitive runtime screenshots and device properties are retained under ignored `build/p1-evidence/`.
+- Manual acceptance remains pending: direct evidence is incomplete for Accessibility/overlay revoke recovery, projection notification stop and re-authorization, Photo Picker, Sharesheet, secure-window capture behavior, and repeated capture cleanup. The emulator identity conflict is recorded but does not prevent emulator-only testing.
 
 ## Risks
 
@@ -86,11 +92,12 @@ Replace the sample screen with a minimal capture workbench that can capture the 
 - MediaProjection image delivery is asynchronous and can be stopped by the user or device lock; listener, timeout, callback, display, and ImageReader resources must be released on every exit.
 - `FLAG_SECURE` may produce a secure error or a blank frame depending on platform/provider. Only the explicit platform error receives the secure-window code; ambiguous blank output remains content unavailable.
 - Android 14+ selected-app projection can capture only the chosen app. The workbench must explain how to choose the target app/entire display and must never preview the workbench as if it were the target when the captured region does not match expectations.
-- Connected ADB identity currently conflicts across properties. Device acceptance and marking Decision 0005 live-verified are blocked until identity is confirmed.
+- Permission-state labels currently combine durable system grants with ephemeral service/session state, and initial false defaults can flash before `onResume()` refresh. Track this as a UI state-model follow-up; do not persist or restore a MediaProjection token as a permission.
+- Connected ADB identity conflicts across properties; this is accepted as an emulator-only limitation. Real OEM behavior, rotation, lock-screen behavior, process recovery, LongCapture, and Play policy remain pending.
 
 ## Exit Criteria
 
 - All declared modules compile; unit and Compose tests pass; secure-window mapping test passes; no success state is emitted on permission/provider/decode failure.
 - Floating capture excludes the overlay and restores it after success and failure; image picker and Sharesheet can produce an in-memory preview.
 - MediaProjection uses fresh consent for each session, creates one virtual display per token, and releases resources when stopped or after the one-shot capture.
-- Clean build passes. One-phone manual verification is marked live-verified only if the connected device identity is confirmed and each listed path is observed; otherwise the plan and final report explicitly retain the device items as pending.
+- Clean build and automated emulator tests pass. P1 may be closed only after each emulator manual path is observed and recorded; until then the plan remains `pending` and Decision 0005 must not be marked live-verified.

@@ -29,7 +29,7 @@ Android 版既要复现 FootballScreenshotOcr 的业务行为，也承担学习�
 
 影响：
 
-当前仓库仍只有 `:app` 和 Compose 示例，Hilt、Navigation 与其他模块尚未实现。目标 `minSdk` 是 30，但当前 Gradle 仍为 24；后续实现任务必须单独处理该差异。
+P0A 已建立 `:app`、`:core`、`:data`、`:ocr`、`:parser` 和五个 `:feature-*` 模块，且模块边界验证通过。P1 使用 Compose 工作台和显式装配，但 Hilt、Navigation、ViewModel/StateFlow、Room 和完整业务流程仍未实现。当前 `minSdk=30`、`compileSdk=36`、`targetSdk=36` 已生效；本 Decision 的目标方向仍需随后续模块实现逐步验证。
 
 验证与退出条件：
 

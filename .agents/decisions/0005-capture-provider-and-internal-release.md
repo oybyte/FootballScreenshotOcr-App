@@ -2,7 +2,9 @@
 
 日期：2026-10-08
 状态：Accepted
-事实状态：Planned
+事实状态：Pending verification
+
+最后核对：2026-10-09
 
 背景：
 
@@ -29,14 +31,15 @@ Provider 隔离允许替换平台实现而不复制业务逻辑；Internal APK �
 
 影响：
 
-需要在 `:app`/capture feature 中管理权限、Service、Provider 生命周期，并持久化每次会话的 provider 和能力状态。当前 Manifest 尚无这些能力，不能把本 Decision 当作已实现。
+`:app`/`:feature-capture` 已实现 P1 的权限入口、Accessibility/MediaProjection provider、悬浮 Service、图片导入和错误诊断；P1 预览仍只在内存中保留。MediaProjection 授权是一次会话状态，不能在进程重启后当作永久授权恢复。CaptureSession、provider 能力持久化、原图事务、进程恢复和 LongCapture 仍未实现，不能把本 Decision 当作完整能力已验证。
 
 验证与退出条件：
 
-在代表设备上验证权限拒绝、投影撤销、后台冻结、进程强杀、旋转、锁屏、手动降级和恢复；发布记录必须区分 Internal 可用、Play 合规和 live verified。
+当前 `clean test assembleDebug verifyModuleBoundaries` 和 `emulator-5554` 上的 8 个 instrumentation 测试已通过。仍需在该模拟器完成权限拒绝/撤销、投影停止与重新授权、图片选择器/系统分享、安全窗口、悬浮入口恢复和重复采集清理的手工矩阵。真实 OEM、后台冻结、进程强杀、旋转、锁屏、LongCapture、Play 政策审核和 live verified 保持 pending；发布记录必须区分 Internal 可用、Play 合规和 live verified。
 
 相关文档：
 
 - `FootballScreenshotOcr-Android版详细开发步骤-v2.1.md` 第 11、19、25 节
 - `.agents/skills/long-capture/SKILL.md`
 - `.agents/skills/release/SKILL.md`
+- `.agents/plans/2026-10-08-p1-android-capture-spike.md`
