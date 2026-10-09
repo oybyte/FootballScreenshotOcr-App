@@ -39,6 +39,7 @@ object CaptureServiceActions {
     const val EXTRA_PROJECTION_ARMED = "projection_armed"
     const val EXTRA_FLOATING_RUNNING = "floating_running"
     const val EXTRA_FAILURE_MESSAGE = "failure_message"
+    const val EXTRA_FAILURE_REASON = "failure_reason"
     const val EXTRA_RESULT_CODE = "projection_result_code"
     const val EXTRA_RESULT_DATA = "projection_result_data"
 }
@@ -262,11 +263,21 @@ class ProjectionCaptureService : Service() {
     private var pendingCallback: ((CaptureResult) -> Unit)? = null
     private var requestTimeout: Runnable? = null
     private var armedTimeout: Runnable? = null
+    private var releasingProjection = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             CaptureServiceActions.ACTION_START_PROJECTION -> startProjection(intent)
-            CaptureServiceActions.ACTION_STOP_PROJECTION -> stopSelf()
+            CaptureServiceActions.ACTION_STOP_PROJECTION -> {
+                releaseProjection(
+                    stopProjection = true,
+                    failure = CaptureFailure(
+                        CaptureFailureReason.PROJECTION_STOPPED,
+                        "屏幕投影已停止，请重新授权后再试。",
+                    ),
+                )
+                stopSelf()
+            }
         }
         return START_NOT_STICKY
     }
@@ -274,10 +285,14 @@ class ProjectionCaptureService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        cancelPending(CaptureFailure(CaptureFailureReason.PROJECTION_STOPPED, "屏幕投影会话已结束，请重新授权后再试。"))
-        releaseProjection(stopProjection = false)
-        notifyProjectionState(armed = false)
-        if (instance === this) instance = null
+        releaseProjection(
+            stopProjection = true,
+            failure = if (pendingCallback != null) {
+                CaptureFailure(CaptureFailureReason.PROJECTION_STOPPED, "屏幕投影会话已结束，请重新授权后再试。")
+            } else {
+                null
+            },
+        )
         super.onDestroy()
     }
 
@@ -328,8 +343,10 @@ class ProjectionCaptureService : Service() {
             projection.registerCallback(
                 object : MediaProjection.Callback() {
                     override fun onStop() {
-                        cancelPending(CaptureFailure(CaptureFailureReason.PROJECTION_STOPPED, "屏幕投影已被系统或用户停止。"))
-                        releaseProjection(stopProjection = false)
+                        releaseProjection(
+                            stopProjection = false,
+                            failure = CaptureFailure(CaptureFailureReason.PROJECTION_STOPPED, "屏幕投影已被系统或用户停止。"),
+                        )
                         stopSelf()
                     }
                 },
@@ -351,7 +368,13 @@ class ProjectionCaptureService : Service() {
                 null,
                 handler,
             )
-            armedTimeout = Runnable { stopSelf() }.also { handler.postDelayed(it, MAX_ARMED_MILLIS) }
+            armedTimeout = Runnable {
+                releaseProjection(
+                    stopProjection = true,
+                    failure = CaptureFailure(CaptureFailureReason.PROJECTION_STOPPED, "屏幕投影会话已超时，请重新授权后再试。"),
+                )
+                stopSelf()
+            }.also { handler.postDelayed(it, MAX_ARMED_MILLIS) }
             notifyProjectionState(armed = true)
         } catch (_: SecurityException) {
             notifyProjectionState(armed = false, message = "屏幕投影权限不可用，请重新授权。")
@@ -414,19 +437,33 @@ class ProjectionCaptureService : Service() {
         return cropped
     }
 
-    private fun releaseProjection(stopProjection: Boolean) {
-        armedTimeout?.let(handler::removeCallbacks)
-        armedTimeout = null
-        requestTimeout?.let(handler::removeCallbacks)
-        requestTimeout = null
-        imageReader?.setOnImageAvailableListener(null, null)
-        imageReader?.close()
-        imageReader = null
-        virtualDisplay?.release()
-        virtualDisplay = null
-        val projection = mediaProjection
-        mediaProjection = null
-        if (stopProjection) projection?.stop()
+    private fun releaseProjection(stopProjection: Boolean, failure: CaptureFailure? = null) {
+        if (releasingProjection) return
+        if (mediaProjection == null && virtualDisplay == null && imageReader == null && pendingCallback == null) {
+            if (failure == null) return
+            notifyProjectionState(armed = false, message = failure.message, failureReason = failure.reason)
+            return
+        }
+        releasingProjection = true
+        try {
+            failure?.let(::cancelPending)
+            armedTimeout?.let(handler::removeCallbacks)
+            armedTimeout = null
+            requestTimeout?.let(handler::removeCallbacks)
+            requestTimeout = null
+            imageReader?.setOnImageAvailableListener(null, null)
+            imageReader?.close()
+            imageReader = null
+            virtualDisplay?.release()
+            virtualDisplay = null
+            val projection = mediaProjection
+            mediaProjection = null
+            if (instance === this) instance = null
+            if (stopProjection) projection?.stop()
+            notifyProjectionState(armed = false, message = failure?.message, failureReason = failure?.reason)
+        } finally {
+            releasingProjection = false
+        }
     }
 
     private fun cancelPending(failure: CaptureFailure) {
@@ -445,12 +482,17 @@ class ProjectionCaptureService : Service() {
         }
     }
 
-    private fun notifyProjectionState(armed: Boolean, message: String? = null) {
+    private fun notifyProjectionState(
+        armed: Boolean,
+        message: String? = null,
+        failureReason: CaptureFailureReason? = null,
+    ) {
         sendBroadcast(
             Intent(CaptureServiceActions.ACTION_PROJECTION_STATE)
                 .setPackage(packageName)
                 .putExtra(CaptureServiceActions.EXTRA_PROJECTION_ARMED, armed)
-                .putExtra(CaptureServiceActions.EXTRA_FAILURE_MESSAGE, message),
+                .putExtra(CaptureServiceActions.EXTRA_FAILURE_MESSAGE, message)
+                .putExtra(CaptureServiceActions.EXTRA_FAILURE_REASON, failureReason?.name),
         )
     }
 

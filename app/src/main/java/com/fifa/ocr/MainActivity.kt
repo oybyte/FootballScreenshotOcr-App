@@ -102,10 +102,13 @@ class MainActivity : ComponentActivity() {
                 CaptureServiceActions.ACTION_PROJECTION_STATE -> {
                     val armed = intent.getBooleanExtra(CaptureServiceActions.EXTRA_PROJECTION_ARMED, false)
                     val message = intent.getStringExtra(CaptureServiceActions.EXTRA_FAILURE_MESSAGE)
+                    val failureReason = intent.getStringExtra(CaptureServiceActions.EXTRA_FAILURE_REASON)
+                        ?.let { value -> runCatching { CaptureFailureReason.valueOf(value) }.getOrNull() }
+                    val failure = message?.let { CaptureFailure(failureReason ?: CaptureFailureReason.SERVICE_UNAVAILABLE, it) }
                     uiState = uiState.copy(
                         permissions = uiState.permissions.copy(projectionArmed = armed),
-                        status = if (armed) "屏幕投影已就绪，请切换到盘口页面后点击悬浮入口。" else message,
-                        error = message?.let { CaptureFailure(CaptureFailureReason.SERVICE_UNAVAILABLE, it) },
+                        status = if (armed) "屏幕投影已就绪，请切换到盘口页面后点击悬浮入口。" else message ?: uiState.status,
+                        error = failure ?: uiState.error,
                     )
                 }
                 CaptureServiceActions.ACTION_FLOATING_STATE -> {
@@ -125,7 +128,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FootballScreenshotOcrTheme {
-                CaptureWorkbenchScreen(uiState, ::openAccessibilitySettings, ::openOverlaySettings, ::requestProjection, ::toggleOverlay, { beginCapture(false) }, ::pickImage) { uiState = uiState.copy(error = null) }
+                CaptureWorkbenchScreen(uiState, ::openAccessibilitySettings, ::openOverlaySettings, ::requestProjection, ::toggleOverlay, { beginCapture(false) }, ::pickImage, ::openSecureWindow) { uiState = uiState.copy(error = null) }
             }
         }
         registerCaptureReceiver()
@@ -167,6 +170,7 @@ class MainActivity : ComponentActivity() {
     private fun openAccessibilitySettings() = startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
     private fun openOverlaySettings() = startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
     private fun requestProjection() = projectionLauncher.launch(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent())
+    private fun openSecureWindow() = startActivity(Intent(this, SecureWindowActivity::class.java))
 
     private fun toggleOverlay() {
         refreshPermissions()
@@ -253,6 +257,7 @@ fun CaptureWorkbenchScreen(
     onToggleOverlay: () -> Unit,
     onCapture: () -> Unit,
     onPickImage: () -> Unit,
+    onSecureWindow: () -> Unit,
     onDismissError: () -> Unit,
 ) {
     Scaffold { padding ->
@@ -274,6 +279,9 @@ fun CaptureWorkbenchScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onToggleOverlay, Modifier.weight(1f).testTag("toggle-floating")) { Text(if (state.overlayRunning) "停止悬浮入口" else "启动悬浮入口") }
                 OutlinedButton(onClick = onProjection, Modifier.weight(1f).testTag("request-projection")) { Text("请求投影授权") }
+            }
+            OutlinedButton(onClick = onSecureWindow, modifier = Modifier.fillMaxWidth().testTag("open-secure-window")) {
+                Text("打开安全窗口测试")
             }
             TextButton(onClick = onCapture, enabled = !state.isCapturing, modifier = Modifier.testTag("capture-now")) { Text("采集当前屏幕") }
             OutlinedButton(onClick = onPickImage, enabled = !state.isCapturing, modifier = Modifier.testTag("pick-image")) { Text("选择图片") }
