@@ -16,3 +16,6 @@
 local.properties
 /.idea/
 /.idea/
+/.agents/p1-capture-preview.png
+/.agents/p1-capture-preview-stopped.png
+/.agents/p1-runtime.png
