@@ -73,11 +73,12 @@ Replace the sample screen with a minimal capture workbench that can capture the 
 
 ### Evidence (2026-10-08)
 
-- `gradlew.bat clean test assembleDebug verifyModuleBoundaries`: passed. Gradle reports one existing configuration-cache warning because `verifyModuleBoundaries` inspects Gradle script objects; the task itself passed.
-- `gradlew.bat :feature-capture:test :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin`: passed.
+- `gradlew.bat clean test assembleDebug verifyModuleBoundaries`: passed in this validation run. All declared modules completed their build tasks, code-bearing modules compiled, the Debug APK assembled, and the module-boundary task passed. Gradle reports one configuration-cache warning because `verifyModuleBoundaries` inspects Gradle script objects; the task itself passed.
+- Unit-test reports: 16 tests passed across `:app`, `:core`, `:feature-capture`, and `:parser`; 0 failures, 0 errors, 0 skipped.
+- `gradlew.bat connectedDebugAndroidTest`: passed on `emulator-5554` (API 34); 4 instrumentation tests passed, including the secure-window fixture and capture workbench UI tests.
 - `git diff --check`: passed.
 - Debug APK installed and `com.fifa.ocr/.MainActivity` launched on ADB target `emulator-5554`; no crash observed in launch log and the P1 workbench rendered.
-- Device-only acceptance remains `pending`: connected target reports API 34, model `25060RK16C`, manufacturer `REDMI`, device `star2qltechn`, and Samsung build fingerprint `samsung/star2qltezh/star2qltechn:14/...`; this is an emulator-like target with conflicting identity, not confirmed as the user's daily phone. Accessibility, overlay, projection, secure-window, picker, share, and clean-overlay manual paths were not marked live-verified.
+- Device-only acceptance remains `pending`: connected target reports API 34, model `25060RK16C`, manufacturer `REDMI`, device `star2qltechn`, and Samsung build fingerprint `samsung/star2qltezh/star2qltechn:14/...`; this is an emulator-like target with conflicting identity, not confirmed as the user's daily phone. Accessibility/overlay interaction was exercised earlier on this target, but projection consent/revocation, picker/share intake, and confirmed real-device behavior remain pending.
 
 ## Risks
 

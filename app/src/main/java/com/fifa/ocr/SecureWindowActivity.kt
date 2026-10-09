@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import android.widget.TextView
 
+/** Internal fixture used by instrumentation to exercise FLAG_SECURE handling. */
 class SecureWindowActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

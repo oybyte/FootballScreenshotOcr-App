@@ -35,6 +35,9 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".SecureWindowActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

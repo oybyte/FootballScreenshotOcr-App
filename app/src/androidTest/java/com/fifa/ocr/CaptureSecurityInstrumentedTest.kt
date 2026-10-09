@@ -1,6 +1,5 @@
 package com.fifa.ocr
 
-import android.content.Intent
 import android.view.WindowManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -15,7 +14,7 @@ import org.junit.runner.RunWith
 class CaptureSecurityInstrumentedTest {
     @Test
     fun secureFixtureMarksWindowSecureAndMapsPlatformDiagnostic() {
-        ActivityScenario.launch<SecureWindowActivity>(Intent()) .use { scenario ->
+        ActivityScenario.launch(SecureWindowActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertTrue(activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
             }
