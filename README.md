@@ -6,7 +6,7 @@ FootballScreenshotOcr 是一个面向足球盘口截图的本地化采集与结�
 
 ## 当前状态
 
-当前仓库已完成 P0A 工程基线和 P1 单屏采集 Spike 的代码实现。P1 工作台支持无障碍截图、悬浮入口、MediaProjection 降级、图片选择器、系统分享导入和安全窗口诊断；结果只保留在当前进程内存中，不写任务、原图或导出文件。自动化构建和 `emulator-5554` instrumentation 已通过，但投影撤销、权限撤销、分享导入等完整手工矩阵仍为 `pending`，不能据此宣称真实 OEM 或 Google Play 已验证。
+当前仓库已完成 P0A 工程基线、P1 单屏采集 Spike 和 P2 数据层实现。P1 工作台支持无障碍截图、悬浮入口、MediaProjection 降级、图片选择器、系统分享导入和安全窗口诊断；工作台预览仍只保留在当前进程内存中，P2 的 `:data` 持久化边界已具备但尚未接入完整任务 UI。自动化构建和 `emulator-5554` instrumentation 已通过，但投影撤销、权限撤销、分享导入等完整手工矩阵仍为 `pending`，不能据此宣称真实 OEM 或 Google Play 已验证。
 
 当前可确认的工程事实：
 
@@ -145,7 +145,7 @@ training_cases/ 训练样本
 ```text
 :app             Activity、Compose UI、悬浮层、Service、权限入口
 :core            v7 契约、迁移和共享纯 Kotlin 模型
-:data            Android data 层骨架
+:data            Room 任务事实、原图文件事务和恢复
 :ocr             OCR 模块骨架
 :parser          纯 Kotlin Parser 模块骨架
 :feature-task    任务模块骨架
@@ -188,7 +188,7 @@ AccessibilityService 适合验证截图、节点滚动和跟随事件，但 Goog
 
 1. P0：冻结数据契约、槽位边界、资源版本和发布目标（P0A 已完成，P0B Windows v7 运行时仍待做）。
 2. P1：完成单屏采集 Spike；当前模拟器自动化已通过，完整手工验收仍待收尾。
-3. P2：完成 `CaptureSession`、原图落盘、暂停/继续和恢复，不接 OCR（已完成，待提交）。
+3. P2：完成 `CaptureSession`、原图落盘、暂停/继续和恢复，不接 OCR（已完成并已提交）。
 4. P3：完成 Stability、Anchor、Coverage、Bottom 状态和长页面合成测试。
 5. P4：在目标设备对比 Android OCR 与 Windows 基线，记录耗时、内存、温升和字段差异。
 6. P5：迁移 Domain、Parser、Merge、Validator，并通过 golden fixtures。

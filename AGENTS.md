@@ -12,11 +12,12 @@ Android 的产品角色是盘口页面旁的移动采集副驾：采集当前屏
 
 规则必须区分“目标架构”和“当前事实”：
 
-- P0A 已建立 `:app`、`:core`、`:data`、`:ocr`、`:parser` 和五个 feature 模块。`:core`、`:parser` 是纯 Kotlin/JVM；`:data`、`:ocr`、feature 是 Android library；`:app` 是 application。模块骨架不代表 Hilt、Room、OCR、Parser 业务流程或 LongCapture 已完成。
+- P0A 已建立 `:app`、`:core`、`:data`、`:ocr`、`:parser` 和五个 feature 模块。`:core`、`:parser` 是纯 Kotlin/JVM；`:data`、`:ocr`、feature 是 Android library；`:app` 是 application。P2 已在 `:data` 接入 Room schema 1、原图文件事务和启动 reconciliation；工程仍未接入 Hilt、OCR、Parser 业务流程或 LongCapture。
 - 当前 Android SDK 基线为 `minSdk 30`、`compileSdk 36`、`targetSdk 36`；版本统一登记在 `gradle/libs.versions.toml`，Gradle daemon 使用 JDK 21。改动这些值仍须由明确任务授权。
 - `contracts/` 与 `test-fixtures/golden/` 由 Android 仓库唯一维护。当前 Windows 仓库不在本仓库内；其 v6 运行时和开发期共享契约校验入口位于独立 Windows/Python 仓库。
 - v2.1 是 Android 实施基线；与代码不一致时遵循“事实检查、明确记录差异、再按任务处理”，不得静默改变业务规则。
 - P1 当前代码已实现单屏采集工作台、Accessibility/MediaProjection provider、悬浮入口和图片导入；`clean test assembleDebug verifyModuleBoundaries` 与 `emulator-5554` 上的 instrumentation 已有通过证据。投影撤销、权限撤销、分享导入等完整手工矩阵仍为 `pending`，不能宣称真实 OEM、进程恢复或 Google Play 合规已验证。
+- P2 当前代码已实现 `CaptureSession`、原图 pending/validated/committed 阶段、哈希去重、暂停/继续、启动中断和 reconciliation；故障注入、恢复元数据、reconciliation 幂等及孤儿 pending 文件测试已通过，真实低存储、OEM 进程强杀和发布合规仍为 `pending`。
 - 权限 UI 必须区分 Android 持久系统授权与进程内运行状态：无障碍开关/悬浮窗授权可由系统查询；Accessibility 连接、悬浮服务和 MediaProjection 会话不是永久授权，进程结束后应重新建立，投影每次会话必须重新取得同意。当前 P1 页面先用全 false 快照渲染、再于 `onResume()` 查询，重启时可能短暂显示“未授权”；这是已知 UI 状态呈现问题，不得据此推断系统授权丢失。
 
 ## v7 共享契约
