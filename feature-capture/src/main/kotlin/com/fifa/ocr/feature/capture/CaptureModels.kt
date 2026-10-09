@@ -1,6 +1,7 @@
 package com.fifa.ocr.feature.capture
 
 import android.graphics.Bitmap
+import com.fifa.ocr.core.contract.CaptureImageLimits
 import java.time.Instant
 
 enum class CaptureSource(val wireName: String) {
@@ -92,9 +93,16 @@ object CaptureRules {
         return streamUri?.takeIf(String::isNotBlank) ?: clipUris.firstOrNull(String::isNotBlank)
     }
 
-    fun decodeSampleSize(width: Int, height: Int, maxEdge: Int = 4096, maxPixels: Long = 8_000_000): Int? {
+    fun decodeSampleSize(
+        width: Int,
+        height: Int,
+        maxEdge: Int = CaptureImageLimits.MAX_EDGE,
+        maxPixels: Long = CaptureImageLimits.MAX_PIXELS,
+    ): Int? {
         if (width <= 0 || height <= 0 || maxEdge <= 0 || maxPixels <= 0) return null
-        if (width > MAX_SOURCE_EDGE || height > MAX_SOURCE_EDGE || width.toLong() * height > MAX_SOURCE_PIXELS) return null
+        if (width > CaptureImageLimits.MAX_SOURCE_EDGE || height > CaptureImageLimits.MAX_SOURCE_EDGE ||
+            width.toLong() * height > CaptureImageLimits.MAX_SOURCE_PIXELS
+        ) return null
         var sample = 1
         while (width / sample > maxEdge || height / sample > maxEdge ||
             (width.toLong() / sample) * (height.toLong() / sample) > maxPixels
@@ -123,8 +131,6 @@ object CaptureRules {
         return true
     }
 
-    private const val MAX_SOURCE_EDGE = 24_000
-    private const val MAX_SOURCE_PIXELS = 199_000_000L
     private const val BLANK_SAMPLE_COLUMNS = 40
     private const val BLANK_SAMPLE_ROWS = 40
 }

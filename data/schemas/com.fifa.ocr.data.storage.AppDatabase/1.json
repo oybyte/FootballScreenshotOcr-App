@@ -1,0 +1,854 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "b45b9128a904d4d2e4e6b025faffa430",
+    "entities": [
+      {
+        "tableName": "tasks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`taskId` TEXT NOT NULL, `status` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `revision` INTEGER NOT NULL, `outputState` TEXT NOT NULL, PRIMARY KEY(`taskId`))",
+        "fields": [
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "outputState",
+            "columnName": "outputState",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "taskId"
+          ]
+        }
+      },
+      {
+        "tableName": "fixtures",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`taskId` TEXT NOT NULL, `competition` TEXT, `homeTeam` TEXT, `awayTeam` TEXT, `kickoffDisplay` TEXT, `sourceJson` TEXT NOT NULL, `userEdited` INTEGER NOT NULL, PRIMARY KEY(`taskId`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`taskId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "competition",
+            "columnName": "competition",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "homeTeam",
+            "columnName": "homeTeam",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "awayTeam",
+            "columnName": "awayTeam",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "kickoffDisplay",
+            "columnName": "kickoffDisplay",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceJson",
+            "columnName": "sourceJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userEdited",
+            "columnName": "userEdited",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "taskId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_fixtures_taskId",
+            "unique": false,
+            "columnNames": [
+              "taskId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fixtures_taskId` ON `${TABLE_NAME}` (`taskId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "tasks",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId"
+            ],
+            "referencedColumns": [
+              "taskId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "slots",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`taskId` TEXT NOT NULL, `slotKind` TEXT NOT NULL, `state` TEXT NOT NULL, `coverage` TEXT NOT NULL, `captureSource` TEXT, `revision` INTEGER NOT NULL, `message` TEXT, PRIMARY KEY(`taskId`, `slotKind`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`taskId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "slotKind",
+            "columnName": "slotKind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverage",
+            "columnName": "coverage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "captureSource",
+            "columnName": "captureSource",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "taskId",
+            "slotKind"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_slots_taskId",
+            "unique": false,
+            "columnNames": [
+              "taskId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_slots_taskId` ON `${TABLE_NAME}` (`taskId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "tasks",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId"
+            ],
+            "referencedColumns": [
+              "taskId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "assets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`assetId` TEXT NOT NULL, `taskId` TEXT NOT NULL, `slotKind` TEXT NOT NULL, `sequence` INTEGER NOT NULL, `sha256` TEXT, `relativePath` TEXT NOT NULL, `fileSize` INTEGER NOT NULL, `width` INTEGER NOT NULL, `height` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `writeState` TEXT NOT NULL, PRIMARY KEY(`assetId`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`taskId`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`taskId`, `slotKind`) REFERENCES `slots`(`taskId`, `slotKind`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "assetId",
+            "columnName": "assetId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "slotKind",
+            "columnName": "slotKind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sequence",
+            "columnName": "sequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sha256",
+            "columnName": "sha256",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "relativePath",
+            "columnName": "relativePath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fileSize",
+            "columnName": "fileSize",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "width",
+            "columnName": "width",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "height",
+            "columnName": "height",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "writeState",
+            "columnName": "writeState",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "assetId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_assets_taskId_sha256",
+            "unique": false,
+            "columnNames": [
+              "taskId",
+              "sha256"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_assets_taskId_sha256` ON `${TABLE_NAME}` (`taskId`, `sha256`)"
+          },
+          {
+            "name": "index_assets_taskId_slotKind",
+            "unique": false,
+            "columnNames": [
+              "taskId",
+              "slotKind"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_assets_taskId_slotKind` ON `${TABLE_NAME}` (`taskId`, `slotKind`)"
+          },
+          {
+            "name": "index_assets_taskId_assetId",
+            "unique": true,
+            "columnNames": [
+              "taskId",
+              "assetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_assets_taskId_assetId` ON `${TABLE_NAME}` (`taskId`, `assetId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "tasks",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId"
+            ],
+            "referencedColumns": [
+              "taskId"
+            ]
+          },
+          {
+            "table": "slots",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId",
+              "slotKind"
+            ],
+            "referencedColumns": [
+              "taskId",
+              "slotKind"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "capture_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` TEXT NOT NULL, `taskId` TEXT NOT NULL, `slotKind` TEXT NOT NULL, `mode` TEXT NOT NULL, `provider` TEXT NOT NULL, `status` TEXT NOT NULL, `startedAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `viewportJson` TEXT, `coverage` TEXT NOT NULL, `coverageEvidenceJson` TEXT NOT NULL, `replayJson` TEXT NOT NULL, `circuitBreakerJson` TEXT NOT NULL, `resourceVersionsJson` TEXT NOT NULL, `modelVersionsJson` TEXT NOT NULL, `revision` INTEGER NOT NULL, `pausedFromStatus` TEXT, PRIMARY KEY(`sessionId`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`taskId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "slotKind",
+            "columnName": "slotKind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "provider",
+            "columnName": "provider",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "viewportJson",
+            "columnName": "viewportJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coverage",
+            "columnName": "coverage",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverageEvidenceJson",
+            "columnName": "coverageEvidenceJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "replayJson",
+            "columnName": "replayJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circuitBreakerJson",
+            "columnName": "circuitBreakerJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceVersionsJson",
+            "columnName": "resourceVersionsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelVersionsJson",
+            "columnName": "modelVersionsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pausedFromStatus",
+            "columnName": "pausedFromStatus",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sessionId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_capture_sessions_taskId",
+            "unique": false,
+            "columnNames": [
+              "taskId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_capture_sessions_taskId` ON `${TABLE_NAME}` (`taskId`)"
+          },
+          {
+            "name": "index_capture_sessions_taskId_slotKind",
+            "unique": false,
+            "columnNames": [
+              "taskId",
+              "slotKind"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_capture_sessions_taskId_slotKind` ON `${TABLE_NAME}` (`taskId`, `slotKind`)"
+          },
+          {
+            "name": "index_capture_sessions_taskId_sessionId",
+            "unique": true,
+            "columnNames": [
+              "taskId",
+              "sessionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_capture_sessions_taskId_sessionId` ON `${TABLE_NAME}` (`taskId`, `sessionId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "tasks",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId"
+            ],
+            "referencedColumns": [
+              "taskId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "capture_segments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`segmentId` TEXT NOT NULL, `taskId` TEXT NOT NULL, `sessionId` TEXT NOT NULL, `assetId` TEXT NOT NULL, `sequence` INTEGER NOT NULL, `capturedAt` TEXT NOT NULL, `state` TEXT NOT NULL, `scrollRequest` REAL, `observedMovement` REAL, `stabilityResult` TEXT NOT NULL, `anchorJson` TEXT NOT NULL, `connectedToPrevious` INTEGER, `overlapRatio` REAL, PRIMARY KEY(`segmentId`), FOREIGN KEY(`taskId`, `sessionId`) REFERENCES `capture_sessions`(`taskId`, `sessionId`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`taskId`, `assetId`) REFERENCES `assets`(`taskId`, `assetId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "segmentId",
+            "columnName": "segmentId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assetId",
+            "columnName": "assetId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sequence",
+            "columnName": "sequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capturedAt",
+            "columnName": "capturedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scrollRequest",
+            "columnName": "scrollRequest",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "observedMovement",
+            "columnName": "observedMovement",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "stabilityResult",
+            "columnName": "stabilityResult",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "anchorJson",
+            "columnName": "anchorJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "connectedToPrevious",
+            "columnName": "connectedToPrevious",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "overlapRatio",
+            "columnName": "overlapRatio",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "segmentId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_capture_segments_sessionId_sequence",
+            "unique": true,
+            "columnNames": [
+              "sessionId",
+              "sequence"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_capture_segments_sessionId_sequence` ON `${TABLE_NAME}` (`sessionId`, `sequence`)"
+          },
+          {
+            "name": "index_capture_segments_assetId",
+            "unique": false,
+            "columnNames": [
+              "assetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_capture_segments_assetId` ON `${TABLE_NAME}` (`assetId`)"
+          },
+          {
+            "name": "index_capture_segments_taskId",
+            "unique": false,
+            "columnNames": [
+              "taskId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_capture_segments_taskId` ON `${TABLE_NAME}` (`taskId`)"
+          },
+          {
+            "name": "index_capture_segments_taskId_sessionId",
+            "unique": false,
+            "columnNames": [
+              "taskId",
+              "sessionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_capture_segments_taskId_sessionId` ON `${TABLE_NAME}` (`taskId`, `sessionId`)"
+          },
+          {
+            "name": "index_capture_segments_taskId_assetId",
+            "unique": false,
+            "columnNames": [
+              "taskId",
+              "assetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_capture_segments_taskId_assetId` ON `${TABLE_NAME}` (`taskId`, `assetId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "capture_sessions",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId",
+              "sessionId"
+            ],
+            "referencedColumns": [
+              "taskId",
+              "sessionId"
+            ]
+          },
+          {
+            "table": "assets",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId",
+              "assetId"
+            ],
+            "referencedColumns": [
+              "taskId",
+              "assetId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "diagnostics",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`diagnosticId` TEXT NOT NULL, `taskId` TEXT, `sessionId` TEXT, `segmentId` TEXT, `assetId` TEXT, `code` TEXT NOT NULL, `severity` TEXT NOT NULL, `message` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `dedupeKey` TEXT NOT NULL, PRIMARY KEY(`diagnosticId`))",
+        "fields": [
+          {
+            "fieldPath": "diagnosticId",
+            "columnName": "diagnosticId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "segmentId",
+            "columnName": "segmentId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "assetId",
+            "columnName": "assetId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "severity",
+            "columnName": "severity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dedupeKey",
+            "columnName": "dedupeKey",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "diagnosticId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_diagnostics_taskId",
+            "unique": false,
+            "columnNames": [
+              "taskId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_diagnostics_taskId` ON `${TABLE_NAME}` (`taskId`)"
+          },
+          {
+            "name": "index_diagnostics_sessionId",
+            "unique": false,
+            "columnNames": [
+              "sessionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_diagnostics_sessionId` ON `${TABLE_NAME}` (`sessionId`)"
+          },
+          {
+            "name": "index_diagnostics_segmentId",
+            "unique": false,
+            "columnNames": [
+              "segmentId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_diagnostics_segmentId` ON `${TABLE_NAME}` (`segmentId`)"
+          },
+          {
+            "name": "index_diagnostics_assetId",
+            "unique": false,
+            "columnNames": [
+              "assetId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_diagnostics_assetId` ON `${TABLE_NAME}` (`assetId`)"
+          },
+          {
+            "name": "index_diagnostics_dedupeKey",
+            "unique": true,
+            "columnNames": [
+              "dedupeKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_diagnostics_dedupeKey` ON `${TABLE_NAME}` (`dedupeKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "revisions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`taskId` TEXT NOT NULL, `revision` INTEGER NOT NULL, `operation` TEXT NOT NULL, `changedAt` TEXT NOT NULL, `source` TEXT NOT NULL, `contentHash` TEXT, PRIMARY KEY(`taskId`, `revision`), FOREIGN KEY(`taskId`) REFERENCES `tasks`(`taskId`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "taskId",
+            "columnName": "taskId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "operation",
+            "columnName": "operation",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "changedAt",
+            "columnName": "changedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contentHash",
+            "columnName": "contentHash",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "taskId",
+            "revision"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_revisions_taskId",
+            "unique": false,
+            "columnNames": [
+              "taskId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_revisions_taskId` ON `${TABLE_NAME}` (`taskId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "tasks",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "taskId"
+            ],
+            "referencedColumns": [
+              "taskId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b45b9128a904d4d2e4e6b025faffa430')"
+    ]
+  }
+}

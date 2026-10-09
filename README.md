@@ -13,7 +13,7 @@ FootballScreenshotOcr 是一个面向足球盘口截图的本地化采集与结�
 - 应用模块为 `app`，包名为 `com.fifa.ocr`。
 - 当前入口是 Jetpack Compose P1 屏幕采集工作台，包名为 `com.fifa.ocr`。
 - `minSdk` 为 30，`compileSdk` 和 `targetSdk` 为 API 36；版本统一登记在 `gradle/libs.versions.toml`。
-- 当前工程包含 `:app`、`:core`、`:data`、`:ocr`、`:parser`、`:feature-task`、`:feature-capture`、`:feature-review`、`:feature-result` 和 `:feature-settings`。模块边界可构建，但 Hilt、Room、OCR、Parser 业务流程、Navigation 和 LongCapture 尚未接线。
+- 当前工程包含 `:app`、`:core`、`:data`、`:ocr`、`:parser`、`:feature-task`、`:feature-capture`、`:feature-review`、`:feature-result` 和 `:feature-settings`。P2 已接入 `:data` 的 Room schema、原图文件事务和启动 reconciliation；Hilt、OCR、Parser 业务流程、Navigation 和 LongCapture 尚未接线。
 - 方案第 76 节仍按“仓库只有 Python / PySide6 Windows 应用”的历史前提描述交付边界；当前检出实际是 Android Gradle 工程，后续不应机械地再创建一个重复的 `android/` 根工程。
 - `contracts/` 和 `test-fixtures/golden/` 已由 Android 仓库维护；Windows/Python 运行时仍在独立仓库，完整 v7 读写和 Renderer 支持属于 P0B。
 - 工作台展示的权限与运行状态生命周期不同：无障碍开关和悬浮窗授权由 Android 系统保存；Accessibility 连接、悬浮入口服务和 MediaProjection 会话是运行时状态，进程/服务结束后需要重新建立，其中 MediaProjection 每次会话都必须重新取得用户同意。当前页面初始状态先填 `false`、再于 `onResume()` 查询系统，重启时可能短暂显示“未授权”；这属于待修复的状态呈现问题，不代表系统授权必然丢失。
@@ -134,7 +134,7 @@ history/ 历史版本
 training_cases/ 训练样本
 ```
 
-目标架构中 Room 是任务运行事实源，Files 保存原图、revision 和导出物，DataStore 只保存轻量设置。P1 尚未引入持久化：当前预览 Bitmap 只在内存中保留，进程重启后自然丢失。P2 才处理 `CaptureSession`、原图事务、哈希去重、暂停/继续和进程恢复；任何文件提交失败都必须保留可恢复原图，不能生成“完整成功”结果。
+目标架构中 Room 是任务运行事实源，Files 保存原图、revision 和导出物，DataStore 只保存轻量设置。P2 已处理 `CaptureSession`、原图事务、哈希去重、暂停/继续和进程恢复；任何文件提交失败都会保留可恢复原图，不能生成“完整成功”结果。完整任务 UI、OCR 和 LongCapture 仍未接线。
 
 “复制给 AI”继续使用“分析指令全文 + 盘口数据”的格式，并排除赛果内容。应用只在本地处理数据，不自动上传。
 
@@ -188,7 +188,7 @@ AccessibilityService 适合验证截图、节点滚动和跟随事件，但 Goog
 
 1. P0：冻结数据契约、槽位边界、资源版本和发布目标（P0A 已完成，P0B Windows v7 运行时仍待做）。
 2. P1：完成单屏采集 Spike；当前模拟器自动化已通过，完整手工验收仍待收尾。
-3. P2：完成 `CaptureSession`、原图落盘、暂停/继续和恢复，不接 OCR。
+3. P2：完成 `CaptureSession`、原图落盘、暂停/继续和恢复，不接 OCR（已完成，待提交）。
 4. P3：完成 Stability、Anchor、Coverage、Bottom 状态和长页面合成测试。
 5. P4：在目标设备对比 Android OCR 与 Windows 基线，记录耗时、内存、温升和字段差异。
 6. P5：迁移 Domain、Parser、Merge、Validator，并通过 golden fixtures。
@@ -228,7 +228,7 @@ AccessibilityService 适合验证截图、节点滚动和跟随事件，但 Goog
 .\gradlew.bat connectedDebugAndroidTest --no-configuration-cache
 ```
 
-前者验证十模块编译、单元测试和依赖边界；后者在 `emulator-5554` 上验证 Compose、安全窗口和图片导入 instrumentation。P2 之前不宣称 Room、OCR、LongCapture、业务导航或真实设备兼容已完成。
+前者验证十模块编译、单元测试和依赖边界；后者在 `emulator-5554` 上验证 Compose、安全窗口、图片导入和 P2 存储 instrumentation。当前不宣称 OCR、LongCapture、业务导航或真实设备兼容已完成。
 
 ## 相关文档
 
