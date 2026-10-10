@@ -11,6 +11,7 @@ import com.fifa.ocr.core.contract.CaptureProvider
 import com.fifa.ocr.core.contract.CaptureSessionStatus
 import com.fifa.ocr.core.contract.SlotKind
 import java.io.File
+import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.runBlocking
@@ -106,12 +107,16 @@ class CaptureStoreInstrumentedTest {
             assertEquals("IMAGES_READY", database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.state)
             assertEquals(CaptureProvider.MANUAL_IMPORT.name, database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.captureSource)
             assertEquals(CaptureSessionStatus.SEGMENT_COMMITTED.name, database.sessionDao().find(sessionId)!!.status)
+            val slotRevision = database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.revision
+            val sessionRevision = database.sessionDao().find(sessionId)!!.revision
             assertEquals(1, database.taskDao().find(taskId)!!.revision)
             assertEquals(1, database.revisionDao().findForTask(taskId).count { it.operation == "ASSET_COMMITTED" })
 
             val second = store.reconcile()
             assertEquals(0, second.committedAssets)
             assertEquals(1, database.taskDao().find(taskId)!!.revision)
+            assertEquals(slotRevision, database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.revision)
+            assertEquals(sessionRevision, database.sessionDao().find(sessionId)!!.revision)
             assertEquals(1, database.revisionDao().findForTask(taskId).count { it.operation == "ASSET_COMMITTED" })
         }
     }
@@ -171,6 +176,58 @@ class CaptureStoreInstrumentedTest {
     }
 
     @Test
+    fun lowStoragePreflightKeepsPendingRecordWithoutCommittingTaskMetadata() = runBlocking {
+        val constrained = TestCaptureFileStore(fileStore, StorageHealth(availableBytes = 10, systemReserveBytes = 8))
+        val store = RoomCaptureStore(database, constrained)
+        val taskId = store.createTask()
+        val sessionId = store.createSession(taskId, SlotKind.ASIAN_HANDICAP, CaptureMode.MANUAL, CaptureProvider.MANUAL_IMPORT)
+
+        val failure = runCatching { store.persistFrame(sessionId, 1, frame()) }.exceptionOrNull()
+
+        assertTrue(failure is StorageLowException)
+        val asset = database.assetDao().findAll().single { it.taskId == taskId }
+        assertEquals("RECOVERY_REQUIRED", asset.writeState)
+        assertEquals("PENDING", database.segmentDao().find(sessionId, 1)!!.state)
+        assertEquals("EMPTY", database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.state)
+        assertEquals(0, database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.revision)
+        assertEquals(0, database.taskDao().find(taskId)!!.revision)
+        assertTrue(database.revisionDao().findForTask(taskId).isEmpty())
+        assertEquals(1, database.diagnosticDao().countByCode("STORAGE_LOW"))
+
+        constrained.writeBitmapTemp(asset.assetId, frame().bitmap)
+        store.reconcile()
+        assertEquals("COMMITTED", database.assetDao().find(asset.assetId)!!.writeState)
+        assertEquals(1, database.taskDao().find(taskId)!!.revision)
+        assertEquals(1, database.revisionDao().findForTask(taskId).count { it.operation == "ASSET_COMMITTED" })
+        store.reconcile()
+        assertEquals(1, database.taskDao().find(taskId)!!.revision)
+        assertEquals(1, database.revisionDao().findForTask(taskId).count { it.operation == "ASSET_COMMITTED" })
+        assertEquals(1, database.diagnosticDao().countByCode("STORAGE_LOW"))
+    }
+
+    @Test
+    fun noSpaceDuringWriteIsReportedAsStorageLowWithoutCommit() = runBlocking {
+        val failing = TestCaptureFileStore(
+            fileStore,
+            StorageHealth(availableBytes = Long.MAX_VALUE, systemReserveBytes = 0),
+            writeFailure = IOException("write failed: ENOSPC (No space left on device)"),
+        )
+        val store = RoomCaptureStore(database, failing)
+        val taskId = store.createTask()
+        val sessionId = store.createSession(taskId, SlotKind.ASIAN_HANDICAP, CaptureMode.MANUAL, CaptureProvider.MANUAL_IMPORT)
+
+        val failure = runCatching { store.persistFrame(sessionId, 1, frame()) }.exceptionOrNull()
+        store.reconcile()
+
+        assertTrue(failure is IOException)
+        assertEquals("RECOVERY_REQUIRED", database.assetDao().findAll().single { it.taskId == taskId }.writeState)
+        assertEquals("EMPTY", database.slotDao().find(taskId, SlotKind.ASIAN_HANDICAP.name)!!.state)
+        assertEquals(0, database.taskDao().find(taskId)!!.revision)
+        assertTrue(database.revisionDao().findForTask(taskId).isEmpty())
+        assertEquals(1, database.diagnosticDao().countByCode("STORAGE_LOW"))
+    }
+
+    @Test
     fun everyInjectedStageLeavesARecoverableOrCommittedRecord() = runBlocking {
         for (point in FailurePoint.entries) {
             val fired = AtomicBoolean(false)
@@ -209,5 +266,18 @@ class CaptureStoreInstrumentedTest {
         val bitmap = Bitmap.createBitmap(12, 12, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(0xff336699.toInt())
         return PersistableFrame(bitmap, CaptureProvider.MANUAL_IMPORT, Instant.EPOCH, 12, 12)
+    }
+
+    private class TestCaptureFileStore(
+        private val delegate: CaptureFileStore,
+        private val health: StorageHealth,
+        private val writeFailure: IOException? = null,
+    ) : CaptureFileStore by delegate {
+        override suspend fun storageHealth() = health
+
+        override suspend fun writeBitmapTemp(assetId: String, bitmap: Bitmap): TempAsset {
+            writeFailure?.let { throw it }
+            return delegate.writeBitmapTemp(assetId, bitmap)
+        }
     }
 }

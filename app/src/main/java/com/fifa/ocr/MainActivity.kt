@@ -71,13 +71,19 @@ import com.fifa.ocr.ui.theme.FootballScreenshotOcrTheme
 import java.util.concurrent.Executors
 
 data class CaptureWorkbenchUiState(
-    val permissions: CapturePermissionSnapshot = CapturePermissionSnapshot(false, false, false, false),
-    val overlayRunning: Boolean = false,
+    val permissions: CapturePermissionSnapshot? = null,
+    val overlayRunning: Boolean? = null,
     val isCapturing: Boolean = false,
     val frame: CapturedFrame? = null,
     val error: CaptureFailure? = null,
     val status: String? = null,
 )
+
+fun CaptureWorkbenchUiState.withProjectionState(armed: Boolean): CaptureWorkbenchUiState =
+    permissions?.let { copy(permissions = it.copy(projectionArmed = armed)) } ?: this
+
+fun CaptureWorkbenchUiState.withFloatingState(running: Boolean): CaptureWorkbenchUiState =
+    if (permissions == null) this else copy(overlayRunning = running)
 
 class MainActivity : ComponentActivity() {
     private val accessibilityProvider: CaptureProvider = AccessibilityCaptureProvider()
@@ -105,8 +111,7 @@ class MainActivity : ComponentActivity() {
                     val failureReason = intent.getStringExtra(CaptureServiceActions.EXTRA_FAILURE_REASON)
                         ?.let { value -> runCatching { CaptureFailureReason.valueOf(value) }.getOrNull() }
                     val failure = message?.let { CaptureFailure(failureReason ?: CaptureFailureReason.SERVICE_UNAVAILABLE, it) }
-                    uiState = uiState.copy(
-                        permissions = uiState.permissions.copy(projectionArmed = armed),
+                    uiState = uiState.withProjectionState(armed).copy(
                         status = if (armed) "屏幕投影已就绪，请切换到盘口页面后点击悬浮入口。" else message ?: uiState.status,
                         error = failure ?: uiState.error,
                     )
@@ -114,8 +119,7 @@ class MainActivity : ComponentActivity() {
                 CaptureServiceActions.ACTION_FLOATING_STATE -> {
                     val running = intent.getBooleanExtra(CaptureServiceActions.EXTRA_FLOATING_RUNNING, false)
                     val message = intent.getStringExtra(CaptureServiceActions.EXTRA_FAILURE_MESSAGE)
-                    uiState = uiState.copy(
-                        overlayRunning = running,
+                    uiState = uiState.withFloatingState(running).copy(
                         error = message?.let { CaptureFailure(CaptureFailureReason.SERVICE_UNAVAILABLE, it) },
                     )
                 }
@@ -174,8 +178,12 @@ class MainActivity : ComponentActivity() {
 
     private fun toggleOverlay() {
         refreshPermissions()
-        if (!uiState.permissions.overlayAllowed) return openOverlaySettings()
-        if (uiState.overlayRunning) {
+        val permissions = uiState.permissions ?: run {
+            uiState = uiState.copy(status = "正在查询权限状态，请稍后重试。")
+            return
+        }
+        if (!permissions.overlayAllowed) return openOverlaySettings()
+        if (uiState.overlayRunning == true) {
             FloatingCaptureService.stop(this)
             uiState = uiState.copy(overlayRunning = false, status = "悬浮入口已停止。")
         } else {
@@ -192,6 +200,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun beginCapture(restoreOverlay: Boolean) {
+        if (uiState.permissions == null) {
+            uiState = uiState.copy(status = "正在查询权限状态，请稍后重试。")
+            return
+        }
         uiState = uiState.copy(isCapturing = true, error = null, status = "正在采集当前屏幕…")
         accessibilityProvider.capture { result ->
             if (result is CaptureResult.Success) completeCapture(result, restoreOverlay)
@@ -266,10 +278,28 @@ fun CaptureWorkbenchScreen(
             Text("P1 单屏验证 · 图片只在当前预览中保留", style = MaterialTheme.typography.bodyMedium)
             Surface(Modifier.fillMaxWidth(), RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    StatusRow("无障碍服务", if (state.permissions.accessibilityReady()) "已连接" else if (state.permissions.accessibilityEnabled) "已启用，连接中" else "未启用", "accessibility-status")
-                    StatusRow("悬浮窗", if (state.permissions.overlayAllowed) "已授权" else "未授权", "overlay-status")
-                    StatusRow("屏幕投影", if (state.permissions.projectionArmed) "本次已授权" else "未授权", "projection-status")
-                    StatusRow("悬浮入口", if (state.overlayRunning) "运行中" else "已停止", "floating-status")
+                    val permissions = state.permissions
+                    StatusRow("无障碍服务", when {
+                        permissions == null -> "正在查询"
+                        permissions.accessibilityReady() -> "已连接"
+                        permissions.accessibilityEnabled -> "已启用，连接中"
+                        else -> "未启用"
+                    }, "accessibility-status")
+                    StatusRow("悬浮窗", when {
+                        permissions == null -> "正在查询"
+                        permissions.overlayAllowed -> "已授权"
+                        else -> "未授权"
+                    }, "overlay-status")
+                    StatusRow("屏幕投影", when {
+                        permissions == null -> "正在查询"
+                        permissions.projectionArmed -> "本次已授权"
+                        else -> "未授权"
+                    }, "projection-status")
+                    StatusRow("悬浮入口", when (state.overlayRunning) {
+                        null -> "正在查询"
+                        true -> "运行中"
+                        false -> "已停止"
+                    }, "floating-status")
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -277,13 +307,13 @@ fun CaptureWorkbenchScreen(
                 OutlinedButton(onClick = onOverlaySettings, Modifier.weight(1f)) { Text("悬浮窗设置") }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onToggleOverlay, Modifier.weight(1f).testTag("toggle-floating")) { Text(if (state.overlayRunning) "停止悬浮入口" else "启动悬浮入口") }
+                Button(onClick = onToggleOverlay, enabled = state.overlayRunning != null, modifier = Modifier.weight(1f).testTag("toggle-floating")) { Text(if (state.overlayRunning == true) "停止悬浮入口" else "启动悬浮入口") }
                 OutlinedButton(onClick = onProjection, Modifier.weight(1f).testTag("request-projection")) { Text("请求投影授权") }
             }
             OutlinedButton(onClick = onSecureWindow, modifier = Modifier.fillMaxWidth().testTag("open-secure-window")) {
                 Text("打开安全窗口测试")
             }
-            TextButton(onClick = onCapture, enabled = !state.isCapturing, modifier = Modifier.testTag("capture-now")) { Text("采集当前屏幕") }
+            TextButton(onClick = onCapture, enabled = !state.isCapturing && state.permissions != null, modifier = Modifier.testTag("capture-now")) { Text("采集当前屏幕") }
             OutlinedButton(onClick = onPickImage, enabled = !state.isCapturing, modifier = Modifier.testTag("pick-image")) { Text("选择图片") }
             state.status?.let { Text(it, Modifier.testTag("capture-status")) }
             state.error?.let { failure ->

@@ -2,9 +2,14 @@ package com.fifa.ocr
 
 import android.graphics.Bitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.fifa.ocr.feature.capture.CaptureFailure
 import com.fifa.ocr.feature.capture.CaptureFailureReason
@@ -22,7 +27,7 @@ class CaptureWorkbenchScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun missingPermissionsExposeSettingsAndDisabledStatus() {
+    fun initialPermissionStateShowsLoadingAndDisablesCapture() {
         composeRule.setContent {
             CaptureWorkbenchScreen(
                 state = CaptureWorkbenchUiState(),
@@ -31,8 +36,42 @@ class CaptureWorkbenchScreenTest {
             )
         }
         composeRule.onNodeWithText("无障碍设置").assertIsDisplayed()
-        composeRule.onNodeWithTag("accessibility-status").assertIsDisplayed()
+        composeRule.onNodeWithTag("accessibility-status").assertTextEquals("正在查询")
+        composeRule.onNodeWithTag("overlay-status").assertTextEquals("正在查询")
+        composeRule.onNodeWithTag("projection-status").assertTextEquals("正在查询")
+        composeRule.onNodeWithTag("floating-status").assertTextEquals("正在查询")
+        composeRule.onAllNodesWithText("未授权").assertCountEquals(0)
+        composeRule.onNodeWithTag("capture-now").assertIsNotEnabled()
+    }
+
+    @Test
+    fun queriedFalsePermissionsShowNotEnabled() {
+        composeRule.setContent {
+            CaptureWorkbenchScreen(
+                state = CaptureWorkbenchUiState(
+                    permissions = CapturePermissionSnapshot(false, false, false, false),
+                    overlayRunning = false,
+                ),
+                onAccessibilitySettings = {}, onOverlaySettings = {}, onProjection = {},
+                onToggleOverlay = {}, onCapture = {}, onPickImage = {}, onSecureWindow = {}, onDismissError = {},
+            )
+        }
         composeRule.onNodeWithText("未启用").assertIsDisplayed()
+        composeRule.onNodeWithTag("overlay-status").assertTextEquals("未授权")
+        composeRule.onNodeWithTag("projection-status").assertTextEquals("未授权")
+        composeRule.onNodeWithTag("capture-now").assertIsEnabled()
+    }
+
+    @Test
+    fun projectionAndFloatingStopEventsOnlyUpdateReadySnapshot() {
+        val ready = CaptureWorkbenchUiState(
+            permissions = CapturePermissionSnapshot(true, true, true, true),
+            overlayRunning = true,
+        )
+        val stopped = ready.withProjectionState(false).withFloatingState(false)
+        check(stopped.permissions?.projectionArmed == false)
+        check(stopped.overlayRunning == false)
+        check(CaptureWorkbenchUiState().withProjectionState(false).permissions == null)
     }
 
     @Test

@@ -86,6 +86,11 @@ Replace the sample screen with a minimal capture workbench that can capture the 
 - Debug APK is installed and `com.fifa.ocr/.MainActivity` launches on `emulator-5554`; non-sensitive runtime screenshots and device properties are retained under ignored `build/p1-evidence/`.
 - Manual acceptance remains pending: direct evidence is incomplete for Accessibility/overlay revoke recovery, projection notification stop and re-authorization, Photo Picker, Sharesheet, secure-window capture behavior, and repeated capture cleanup. The emulator identity conflict is recorded but does not prevent emulator-only testing.
 
+### Evidence (2026-10-10)
+
+- `:app:connectedDebugAndroidTest --no-configuration-cache`: passed, 10/10 on `emulator-5554` (API 34). This is automated Compose/instrumentation evidence and does not close the manual matrix.
+- The manual matrix was not advanced: Codex UI automation reported no bindable emulator window while the device-side flow was at an authorization prompt. No system permission was clicked and no ADB input was used as a substitute. Accessibility, Overlay, MediaProjection, Photo Picker/Sharesheet, secure-window capture, overlay restoration, and repeated capture cleanup remain `pending` pending a visible UI session.
+
 ## Risks
 
 - Some OEMs disable or alter Accessibility screenshot support; explicit failure and manual/import paths remain available.

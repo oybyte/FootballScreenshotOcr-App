@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.StatFs
+import android.os.storage.StorageManager
 import com.fifa.ocr.core.contract.CaptureImageLimits
 import java.io.File
 import java.io.FileInputStream
@@ -24,7 +26,21 @@ data class ValidatedAsset(
 
 data class FileScanResult(val pending: List<File>, val committed: List<File>)
 
+data class StorageHealth(
+    val availableBytes: Long,
+    val systemReserveBytes: Long,
+) {
+    fun hasCapacity(requiredBytes: Long): Boolean {
+        require(requiredBytes >= 0) { "requiredBytes must not be negative" }
+        val reserve = systemReserveBytes.coerceAtLeast(0L)
+        return availableBytes >= reserve && requiredBytes <= availableBytes - reserve
+    }
+}
+
+class StorageLowException(message: String) : IOException(message)
+
 interface CaptureFileStore {
+    suspend fun storageHealth(): StorageHealth
     suspend fun writeBitmapTemp(assetId: String, bitmap: Bitmap): TempAsset
     suspend fun copyUriTemp(assetId: String, uri: Uri): TempAsset
     suspend fun validate(tempAsset: TempAsset): ValidatedAsset
@@ -37,6 +53,17 @@ class AndroidCaptureFileStore(private val context: Context) : CaptureFileStore {
     private val root: File = File(context.filesDir, "captures")
     private val pendingDir: File = File(root, "pending")
     private val committedDir: File = File(root, "committed")
+
+    override suspend fun storageHealth(): StorageHealth {
+        ensureDirectories()
+        val stat = StatFs(root.absolutePath)
+        val storageManager = context.getSystemService(StorageManager::class.java)
+        val allocatableBytes = storageManager?.let {
+            it.getAllocatableBytes(it.getUuidForPath(root))
+        } ?: stat.availableBytes
+        val systemReserveBytes = (stat.availableBytes - allocatableBytes).coerceAtLeast(0L)
+        return StorageHealth(stat.availableBytes, systemReserveBytes)
+    }
 
     override suspend fun writeBitmapTemp(assetId: String, bitmap: Bitmap): TempAsset {
         require(!bitmap.isRecycled) { "Cannot persist a recycled bitmap" }

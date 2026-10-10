@@ -11,6 +11,7 @@ import com.fifa.ocr.core.contract.ReplayEventType
 import com.fifa.ocr.core.contract.ReplayLog
 import com.fifa.ocr.core.contract.SlotKind
 import com.fifa.ocr.core.contract.SlotState
+import java.io.IOException
 import java.time.Instant
 import java.util.UUID
 import kotlinx.serialization.encodeToString
@@ -136,11 +137,30 @@ class RoomCaptureStore(
         }
         failureInjector.check(FailurePoint.AFTER_PENDING_INSERT)
 
+        val storageHealth = try {
+            fileStore.storageHealth()
+        } catch (exception: Exception) {
+            database.assetDao().updateState(assetId, "RECOVERY_REQUIRED")
+            val code = if (exception.isNoSpace()) "STORAGE_LOW" else "STORAGE_HEALTH_UNAVAILABLE"
+            addDiagnostic(session.taskId, sessionId, null, assetId, code, exception.message ?: "storage health query failed")
+            throw exception
+        }
+        val requiredBytes = frame.bitmap.allocationByteCount.toLong()
+        if (!storageHealth.hasCapacity(requiredBytes)) {
+            val exception = StorageLowException(
+                "Insufficient storage: available=${storageHealth.availableBytes}, reserve=${storageHealth.systemReserveBytes}, required=$requiredBytes",
+            )
+            database.assetDao().updateState(assetId, "RECOVERY_REQUIRED")
+            addDiagnostic(session.taskId, sessionId, null, assetId, "STORAGE_LOW", exception.message ?: "storage is below the safe threshold")
+            throw exception
+        }
+
         val temp = try {
             fileStore.writeBitmapTemp(assetId, frame.bitmap)
         } catch (exception: Exception) {
             database.assetDao().updateState(assetId, "RECOVERY_REQUIRED")
-            addDiagnostic(session.taskId, sessionId, null, assetId, "FILE_WRITE_FAILED", exception.message ?: "file write failed")
+            val code = if (exception.isNoSpace()) "STORAGE_LOW" else "FILE_WRITE_FAILED"
+            addDiagnostic(session.taskId, sessionId, null, assetId, code, exception.message ?: "file write failed")
             throw exception
         }
         failureInjector.check(FailurePoint.AFTER_TEMP_WRITE)
@@ -209,7 +229,6 @@ class RoomCaptureStore(
     }
 
     override suspend fun reconcile(): ReconciliationReport {
-        interruptActiveSessionsOnStartup()
         val files = fileStore.scan()
         var committed = 0
         var recovery = 0
@@ -330,6 +349,12 @@ class RoomCaptureStore(
     }
 
     private class RecoveredAssetRelationException(message: String) : IllegalStateException(message)
+
+    private fun Throwable.isNoSpace(): Boolean = generateSequence(this) { it.cause }
+        .any { cause ->
+            val message = cause.message.orEmpty().lowercase()
+            message.contains("enospc") || message.contains("no space left") || message.contains("not enough space")
+        }
 
     private fun appendReplay(current: String, eventType: ReplayEventType, message: String?): String {
         val replay = runCatching { json.decodeFromString<ReplayLog>(current) }.getOrElse { ReplayLog(emptyList()) }
